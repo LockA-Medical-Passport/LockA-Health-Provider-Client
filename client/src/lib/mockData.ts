@@ -1,0 +1,198 @@
+import type {
+  AccessGrant,
+  AccessRequest,
+  AuditEvent,
+  MedicalRecord,
+  PatientLookupResult,
+  ProviderOrganization,
+  StaffMember,
+} from './types';
+
+export const mockProvider: ProviderOrganization = {
+  providerId: 'prov_8f2a1c4e9b',
+  name: 'St. Aventine General Hospital',
+  orgType: 'hospital',
+  verificationStatus: 'verified',
+  stellarAddress: 'GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37',
+  registeredAt: '2025-11-03T09:12:00Z',
+  staffCount: 4,
+};
+
+export const mockStaff: StaffMember[] = [
+  { id: 'staff_1', name: 'Dr. Amina Okoye', email: 'a.okoye@aventinegeneral.org', role: 'admin', addedAt: '2025-11-03T09:12:00Z' },
+  { id: 'staff_2', name: 'Dr. Kwame Mensah', email: 'k.mensah@aventinegeneral.org', role: 'clinician', addedAt: '2025-11-10T14:30:00Z' },
+  { id: 'staff_3', name: 'Grace Njideka', email: 'g.njideka@aventinegeneral.org', role: 'clinician', addedAt: '2025-12-01T11:00:00Z' },
+  { id: 'staff_4', name: 'Femi Adebayo', email: 'f.adebayo@aventinegeneral.org', role: 'front_desk', addedAt: '2026-01-15T08:45:00Z' },
+];
+
+export const mockPatients: PatientLookupResult[] = [
+  { passportId: 'pp_3a91ee02', displayName: 'Chidinma Eze', passportStatus: 'active' },
+  { passportId: 'pp_7b2cd415', displayName: 'Tunde Balogun', passportStatus: 'active' },
+  { passportId: 'pp_e40f9a88', displayName: 'Ifeoma Chukwu', passportStatus: 'active' },
+  { passportId: 'pp_02c8b1de', displayName: 'Samuel Okonkwo', passportStatus: 'inactive' },
+];
+
+export const mockAccessRequests: AccessRequest[] = [
+  {
+    id: 'req_1001',
+    patientPassportId: 'pp_3a91ee02',
+    patientDisplayName: 'Chidinma Eze',
+    requestedCategories: ['medical_summary', 'lab_result'],
+    durationDays: 30,
+    purpose: 'Follow-up consultation for recent lab results',
+    status: 'pending',
+    requestedAt: '2026-07-24T10:15:00Z',
+    resolvedAt: null,
+    expiresAt: null,
+  },
+  {
+    id: 'req_1002',
+    patientPassportId: 'pp_7b2cd415',
+    patientDisplayName: 'Tunde Balogun',
+    requestedCategories: ['vaccination'],
+    durationDays: 7,
+    purpose: 'Verify vaccination status prior to surgery',
+    status: 'approved',
+    requestedAt: '2026-07-20T08:00:00Z',
+    resolvedAt: '2026-07-20T09:30:00Z',
+    expiresAt: '2026-07-27T09:30:00Z',
+  },
+  {
+    id: 'req_1003',
+    patientPassportId: 'pp_e40f9a88',
+    patientDisplayName: 'Ifeoma Chukwu',
+    requestedCategories: ['diagnosis', 'prescription'],
+    durationDays: 14,
+    purpose: 'Ongoing treatment review',
+    status: 'denied',
+    requestedAt: '2026-07-18T13:45:00Z',
+    resolvedAt: '2026-07-18T16:00:00Z',
+    expiresAt: null,
+  },
+];
+
+export const mockAccessGrants: AccessGrant[] = [
+  {
+    id: 'grant_2001',
+    patientPassportId: 'pp_7b2cd415',
+    patientDisplayName: 'Tunde Balogun',
+    categories: ['vaccination'],
+    grantedAt: '2026-07-20T09:30:00Z',
+    expiresAt: '2026-07-27T09:30:00Z',
+    status: 'expiring_soon',
+  },
+  {
+    id: 'grant_2002',
+    patientPassportId: 'pp_3a91ee02',
+    patientDisplayName: 'Chidinma Eze',
+    categories: ['medical_summary', 'lab_result', 'prescription'],
+    grantedAt: '2026-06-15T09:00:00Z',
+    expiresAt: '2026-09-15T09:00:00Z',
+    status: 'active',
+  },
+  {
+    id: 'grant_2003',
+    patientPassportId: 'pp_02c8b1de',
+    patientDisplayName: 'Samuel Okonkwo',
+    categories: ['surgery_report'],
+    grantedAt: '2026-05-01T09:00:00Z',
+    expiresAt: '2026-06-01T09:00:00Z',
+    status: 'expired',
+  },
+];
+
+export const mockRecords: MedicalRecord[] = [
+  {
+    id: 'rec_3001',
+    patientPassportId: 'pp_3a91ee02',
+    patientDisplayName: 'Chidinma Eze',
+    category: 'lab_result',
+    title: 'Complete Blood Count Panel',
+    issuerProviderId: 'prov_8f2a1c4e9b',
+    issuerName: 'St. Aventine General Hospital',
+    createdAt: '2026-07-22T11:00:00Z',
+    commitmentHash: '0x7c4a8d09ca3762af61e59520943dc26494f8941',
+    notes: 'All values within normal reference range. No follow-up indicated.',
+  },
+  {
+    id: 'rec_3002',
+    patientPassportId: 'pp_3a91ee02',
+    patientDisplayName: 'Chidinma Eze',
+    category: 'prescription',
+    title: 'Amoxicillin 500mg — 7 day course',
+    issuerProviderId: 'prov_8f2a1c4e9b',
+    issuerName: 'St. Aventine General Hospital',
+    createdAt: '2026-06-16T09:30:00Z',
+    commitmentHash: '0x2fd4e1c0b8a3f5d6e7c8b9a0f1e2d3c4b5a69788',
+    notes: 'Prescribed for bacterial sinusitis. Take with food, twice daily.',
+  },
+  {
+    id: 'rec_3003',
+    patientPassportId: 'pp_7b2cd415',
+    patientDisplayName: 'Tunde Balogun',
+    category: 'vaccination',
+    title: 'Yellow Fever Vaccination',
+    issuerProviderId: 'prov_5c1b0a99f2',
+    issuerName: 'Lagos Central Clinic',
+    createdAt: '2025-03-11T10:00:00Z',
+    commitmentHash: '0x9a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3',
+    notes: 'Single dose, lifetime validity per WHO guidance.',
+  },
+];
+
+export const mockAuditLog: AuditEvent[] = [
+  {
+    id: 'audit_4001',
+    type: 'access_requested',
+    patientPassportId: 'pp_3a91ee02',
+    patientDisplayName: 'Chidinma Eze',
+    actor: 'Dr. Kwame Mensah',
+    timestamp: '2026-07-24T10:15:00Z',
+    detail: 'Requested access to Medical Summary, Lab Result for 30 days',
+  },
+  {
+    id: 'audit_4002',
+    type: 'access_approved',
+    patientPassportId: 'pp_7b2cd415',
+    patientDisplayName: 'Tunde Balogun',
+    actor: 'Patient',
+    timestamp: '2026-07-20T09:30:00Z',
+    detail: 'Approved access to Vaccination for 7 days',
+  },
+  {
+    id: 'audit_4003',
+    type: 'record_viewed',
+    patientPassportId: 'pp_7b2cd415',
+    patientDisplayName: 'Tunde Balogun',
+    actor: 'Dr. Amina Okoye',
+    timestamp: '2026-07-21T14:02:00Z',
+    detail: 'Viewed Yellow Fever Vaccination record',
+  },
+  {
+    id: 'audit_4004',
+    type: 'access_denied',
+    patientPassportId: 'pp_e40f9a88',
+    patientDisplayName: 'Ifeoma Chukwu',
+    actor: 'Patient',
+    timestamp: '2026-07-18T16:00:00Z',
+    detail: 'Denied access to Diagnosis, Prescription',
+  },
+  {
+    id: 'audit_4005',
+    type: 'record_uploaded',
+    patientPassportId: 'pp_3a91ee02',
+    patientDisplayName: 'Chidinma Eze',
+    actor: 'Dr. Kwame Mensah',
+    timestamp: '2026-07-22T11:00:00Z',
+    detail: 'Uploaded Complete Blood Count Panel (Lab Result)',
+  },
+  {
+    id: 'audit_4006',
+    type: 'access_revoked',
+    patientPassportId: 'pp_02c8b1de',
+    patientDisplayName: 'Samuel Okonkwo',
+    actor: 'Patient',
+    timestamp: '2026-06-01T09:00:00Z',
+    detail: 'Revoked access to Surgery Report',
+  },
+];
