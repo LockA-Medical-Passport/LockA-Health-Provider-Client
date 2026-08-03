@@ -13,6 +13,34 @@ See the [full LockA documentation](https://github.com/LockA-Medical-Passport/Loc
 - **Backend API** (`locka-api`, developed separately) handles authentication, encryption, indexing, and notifications between this client and the blockchain.
 - **This client** authenticates providers via a Stellar wallet ([Freighter](https://www.freighter.app/) for the MVP) and talks to the backend API for everything else.
 
+## Design reference vs. blockchain implementation
+
+This UI's visual design (dark navy/cyan glassmorphism theme, layout, and component patterns) is modeled after an existing **EVM/Solidity** implementation of LockA:
+
+- Live app: [locka.remixdapp.eth.limo](https://locka.remixdapp.eth.limo/)
+- Source: [Dannyswiss1/LockA-Medical-Passport-Monorepo](https://github.com/Dannyswiss1/LockA-Medical-Passport-Monorepo)
+
+That version runs on Base (an EVM Layer 2) with Solidity contracts and MetaMask for wallet auth. **This repository is a different implementation track** — it follows the [official LockA documentation](https://github.com/LockA-Medical-Passport/LockA-Documentation/blob/main/Documentation.md)'s **Stellar/Soroban** architecture instead:
+
+| | EVM reference (design source) | This repo (target implementation) |
+|---|---|---|
+| Chain | Base (EVM L2) | Stellar (Soroban smart contracts) |
+| Wallet | MetaMask | [Freighter](https://www.freighter.app/) |
+| Native asset | ETH | XLM (Stellar Lumens) |
+| Contract language | Solidity | Rust (Soroban) |
+
+Smart contracts referenced in the two docs map conceptually as follows:
+
+| EVM reference contract | Soroban equivalent (this repo targets) |
+|---|---|
+| `PatientPassportRegistry` | `PatientIdentityRegistry` |
+| `ProviderRegistry` | `ProviderRegistry` |
+| `MedicalRecordRegistry` | `RecordCommitmentRegistry` |
+| `ConsentAccessManager` | `ConsentAccessControl` |
+| `LockAOrchestrator` / audit trail | `AuditEventEmitter` |
+
+Only the UI/UX is being reused from the EVM version — all wallet connection, identity, and consent logic in this client targets Stellar/Soroban via Freighter, not EVM tooling.
+
 ## Requirements
 
 - Node.js 18+
@@ -52,6 +80,8 @@ The client currently runs against an in-memory mock API layer (`client/src/lib/a
 
 ## Related repositories
 
-- [`locka-patient-client`](https://github.com/LockA-Medical-Passport) — patient-side approvals and passport management
-- [`locka-api`](https://github.com/LockA-Medical-Passport) — backend services
-- [`locka-contracts`](https://github.com/LockA-Medical-Passport) — Stellar/Soroban smart contracts
+- [`LockA-Medical-Passport-Monorepo`](https://github.com/Dannyswiss1/LockA-Medical-Passport-Monorepo) — EVM/Solidity reference implementation this client's design is based on
+- [`LockA-Documentation`](https://github.com/LockA-Medical-Passport/LockA-Documentation) — architecture, data model, and API reference for the Stellar/Soroban version
+- `locka-patient-client` — patient-side approvals and passport management (Stellar/Soroban, sibling repo per the documentation)
+- `locka-api` — backend services (Stellar/Soroban, sibling repo per the documentation)
+- `locka-contracts` — Soroban smart contracts (sibling repo per the documentation)
