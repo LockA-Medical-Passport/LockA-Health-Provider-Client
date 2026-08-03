@@ -12,6 +12,7 @@ the project.
 - [Running the app](#running-the-app)
 - [Codebase layout](#codebase-layout)
 - [Testing and linting](#testing-and-linting)
+- [CI](#ci)
 - [Submitting a pull request](#submitting-a-pull-request)
 - [Code style](#code-style)
 - [Code of conduct](#code-of-conduct)
@@ -66,18 +67,29 @@ connect a wallet and use the provider portal.
 
 ## Testing and linting
 
-The repository does not currently have an automated test suite. Please
-cover the checks that do exist and keep your changes verifiable:
+The project uses [Vitest](https://vitest.dev) with React Testing
+Library. Test files live next to the code as `*.test.ts(x)` (e.g.
+`client/src/lib/api.test.ts`). Run the full suite from `client/`:
+
+```bash
+npm test               # run tests once (vitest run)
+npm run test:watch     # re-run on file changes
+npm run test:coverage  # run with coverage report
+```
+
+Before pushing, make sure the same checks CI runs are green:
 
 ```bash
 npm run lint      # oxlint (React hooks + typeScript rules)
-npm run build     # TypeScript type-check; must pass with no errors
+npm run build     # TypeScript type-check + production build
+npm test          # Vitest suite
 ```
 
-Until a test framework is added, explain in your PR description how you
-manually verified the change (what you clicked, what you expected, what
-you saw), and update the mock fixtures in `client/src/lib/mockData.ts` if
-your change touches data shapes.
+New features and bug fixes should include tests in `client/src/**/*.test.ts(x)`. If your change touches data shapes, also update the mock fixtures in `client/src/lib/mockData.ts`.
+
+## CI
+
+CI (`.github/workflows/ci.yml`) runs lint, build, and tests on every push to `main` and on every pull request. Don't merge a PR that leaves CI red.
 
 ## Codebase layout
 
@@ -106,10 +118,12 @@ mirrors the real `locka-api` endpoint, so replacing it with real
    `docs/contributing-guide`).
 3. **Make focused commits.** One logical change per commit. Don't fold
    unrelated edits (formatting churn, renames) into a functional change.
-4. **Open the PR.** Use the
+4. **Write tests.** Until CI is green, don't submit. See [Testing and
+   linting](#testing-and-linting).
+5. **Open the PR.** Use the
    [pull request template](.github/PULL_REQUEST_TEMPLATE.md) and link the
    issue you're closing (e.g. `Closes #12`).
-5. **Expect a review.** Keep the PR scoped; reviewers may ask for
+6. **Expect a review.** Keep the PR scoped; reviewers may ask for
    changes. Push amendments rather than force-pushing over reviewed work.
 
 ### Keeping a branch in sync
