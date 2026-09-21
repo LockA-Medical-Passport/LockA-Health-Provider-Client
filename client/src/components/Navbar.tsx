@@ -4,6 +4,7 @@ import { LockaLogo } from './LockaLogo';
 import { Spinner } from './Spinner';
 import { truncateAddress } from '../lib/format';
 import type { WalletStatus } from '../hooks/useWallet';
+import { ROLE_LABELS, useCurrentRole } from '../lib/roleContext';
 import {
   AccessIcon,
   AuditIcon,
@@ -35,6 +36,7 @@ interface NavbarProps {
 export function Navbar({ walletStatus, address, network, onConnect, onDisconnect }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const { role } = useCurrentRole();
 
   return (
     <nav className="glass-bright sticky top-0 z-40 border-b border-blue-900/30">
@@ -69,6 +71,7 @@ export function Navbar({ walletStatus, address, network, onConnect, onDisconnect
           <div className="flex items-center gap-2 flex-shrink-0">
             {walletStatus === 'connected' && address ? (
               <>
+                {role && <span className="text-xs text-cyan-300" aria-label={`Current role: ${ROLE_LABELS[role]}`}>{ROLE_LABELS[role]}</span>}
                 <div className="hidden sm:flex items-center gap-2 glass rounded-lg px-3 py-1.5">
                   <div
                     className="w-2 h-2 rounded-full flex-shrink-0"

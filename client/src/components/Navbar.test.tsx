@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { truncateAddress } from '../lib/format';
 import type { WalletStatus } from '../hooks/useWallet';
+import { RoleProvider } from '../lib/roleContext';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard' },
@@ -39,6 +40,12 @@ function renderNavbar(
 }
 
 describe('Navbar', () => {
+  it.each(['admin', 'clinician', 'front_desk'] as const)('displays the effective %s role', (role) => {
+    const labels = { admin: 'Admin', clinician: 'Clinician', front_desk: 'Front Desk' };
+    render(<MemoryRouter><RoleProvider role={role}><Navbar walletStatus="connected" address="GTEST" network="TESTNET" onConnect={vi.fn()} onDisconnect={vi.fn()} /></RoleProvider></MemoryRouter>);
+    expect(screen.getByLabelText(`Current role: ${labels[role]}`)).toHaveTextContent(labels[role]);
+  });
+
   describe('wallet status rendering', () => {
     it('shows the truncated address, network, and a working Disconnect button when connected', () => {
       const address = 'GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37';

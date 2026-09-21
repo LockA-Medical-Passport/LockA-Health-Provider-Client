@@ -1,3 +1,4 @@
+import { RoleProvider } from '../lib/roleContext';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ProviderProfile } from './ProviderProfile';
@@ -9,6 +10,7 @@ vi.mock('../lib/api', () => ({
   getProvider: vi.fn(),
   listStaff: vi.fn(),
   addStaffMember: vi.fn(),
+  removeStaffMember: vi.fn(),
 }));
 
 const mockGetProvider = vi.mocked(getProvider);
@@ -52,13 +54,13 @@ const newMember: StaffMember = {
 function renderPage() {
   return render(
     <ToastProvider>
-      <ProviderProfile />
+      <RoleProvider role="admin"><ProviderProfile /></RoleProvider>
     </ToastProvider>,
   );
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
 });
 
 describe('ProviderProfile', () => {
@@ -126,7 +128,7 @@ describe('ProviderProfile', () => {
     expect(screen.getByRole('combobox')).toHaveValue('clinician');
   });
 
-  it('keeps Add Staff disabled until both name and email are provided', async () => {
+  it('shows required and email-format errors after blur or submit, and clears them as fields are corrected', async () => {
     mockGetProvider.mockResolvedValue(baseProvider);
     mockListStaff.mockResolvedValue([adminMember, clinicianMember]);
 
@@ -134,16 +136,26 @@ describe('ProviderProfile', () => {
     await screen.findByText('Dr. Amina Okoye');
 
     const submitButton = screen.getByRole('button', { name: 'Add Staff' });
-    expect(submitButton).toBeDisabled();
+    const email = screen.getByLabelText('Email');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.change(email, { target: { value: 'not-an-email' } });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.blur(email);
+    expect(email).toHaveAccessibleDescription('Enter a valid email address');
+    expect(email).toHaveAttribute('aria-invalid', 'true');
+    fireEvent.click(submitButton);
+    expect(screen.getByLabelText('Full name')).toHaveAccessibleDescription('Name is required');
+    expect(mockAddStaffMember).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByPlaceholderText('Full name'), { target: { value: 'New Nurse' } });
-    expect(submitButton).toBeDisabled();
+    expect(screen.queryByText('Name is required')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: '   ' } });
-    expect(submitButton).toBeDisabled();
+    expect(email).toHaveAccessibleDescription('Email is required');
 
     fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'new.nurse@aventinegeneral.org' } });
-    expect(submitButton).not.toBeDisabled();
+    expect(email).not.toHaveAttribute('aria-describedby');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
     expect(mockAddStaffMember).not.toHaveBeenCalled();
   });

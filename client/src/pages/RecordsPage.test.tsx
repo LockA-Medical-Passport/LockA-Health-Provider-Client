@@ -1,3 +1,5 @@
+import { paged } from '../test/fixtures';
+import { RoleProvider } from '../lib/roleContext';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { RecordsPage } from './RecordsPage';
@@ -32,7 +34,7 @@ const existingRecord: MedicalRecord = {
 function renderPage() {
   return render(
     <ToastProvider>
-      <RecordsPage />
+      <RoleProvider role="admin"><RecordsPage /></RoleProvider>
     </ToastProvider>,
   );
 }
@@ -45,7 +47,7 @@ function fillRequiredTextFields() {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
 });
 
 describe('RecordsPage', () => {
@@ -63,7 +65,7 @@ describe('RecordsPage', () => {
       notes: 'Some notes',
       attachment: { fileName: 'report.pdf', fileType: 'application/pdf', fileSize: 1024 },
     };
-    mockListRecords.mockResolvedValueOnce([]).mockResolvedValueOnce([uploaded]);
+    mockListRecords.mockResolvedValueOnce(paged([])).mockResolvedValueOnce(paged([uploaded]));
     mockUploadRecord.mockResolvedValue(uploaded);
     mockViewRecord.mockResolvedValue(uploaded);
 
@@ -115,7 +117,7 @@ describe('RecordsPage', () => {
   });
 
   it('opens the detail modal for an existing record, triggers a record_viewed lookup, and closes on Escape', async () => {
-    mockListRecords.mockResolvedValue([existingRecord]);
+    mockListRecords.mockResolvedValue(paged([existingRecord]));
     mockViewRecord.mockResolvedValue(existingRecord);
 
     renderPage();
@@ -135,31 +137,45 @@ describe('RecordsPage', () => {
     expect(screen.getByText('Existing Blood Panel')).toBeInTheDocument();
   });
 
-  it('keeps submit disabled until passport ID, title, and a valid attachment are all provided', async () => {
-    mockListRecords.mockResolvedValue([]);
+  it('explains required fields on submit and validates passport format after blur', async () => {
+    mockListRecords.mockResolvedValue(paged([]));
 
     renderPage();
     await screen.findByText('No records available yet.');
     fireEvent.click(screen.getByRole('button', { name: 'Add Record' }));
 
     const submitButton = screen.getByRole('button', { name: /Upload & Commit Hash/ });
-    expect(submitButton).toBeDisabled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    const passport = screen.getByLabelText('Patient Passport ID');
+    fireEvent.change(passport, { target: { value: 'invalid' } });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.blur(passport);
+    expect(passport).toHaveAccessibleDescription('Must look like pp_xxxxxxxx');
+    expect(passport).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.queryByText('Title is required')).not.toBeInTheDocument();
+
+    fireEvent.click(submitButton);
+    expect(screen.getByLabelText('Title')).toHaveAccessibleDescription('Title is required');
+    expect(screen.getByLabelText('Record document attachment')).toHaveAccessibleDescription('Attach a document');
+    expect(mockUploadRecord).not.toHaveBeenCalled();
 
     fillRequiredTextFields();
-    expect(submitButton).toBeDisabled();
+    expect(passport).toHaveAttribute('aria-invalid', 'false');
+    expect(screen.queryByText('Title is required')).not.toBeInTheDocument();
 
     const file = new File(['content'], 'report.pdf', { type: 'application/pdf' });
     fireEvent.change(screen.getByLabelText('Record document attachment'), { target: { files: [file] } });
     expect(submitButton).not.toBeDisabled();
 
     fireEvent.change(screen.getByPlaceholderText('pp_…'), { target: { value: '   ' } });
-    expect(submitButton).toBeDisabled();
+    fireEvent.click(submitButton);
+    expect(passport).toHaveAccessibleDescription('Patient passport ID is required');
 
     expect(mockUploadRecord).not.toHaveBeenCalled();
   });
 
   it('rejects an unsupported file type with a user-facing error and no preview chip', async () => {
-    mockListRecords.mockResolvedValue([]);
+    mockListRecords.mockResolvedValue(paged([]));
 
     renderPage();
     await screen.findByText('No records available yet.');
@@ -171,11 +187,13 @@ describe('RecordsPage', () => {
 
     expect(screen.getByText(/Unsupported file type/)).toBeInTheDocument();
     expect(screen.queryByText('notes.txt')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Upload & Commit Hash/ })).toBeDisabled();
+    expect(screen.getByLabelText('Record document attachment')).toHaveAccessibleDescription(/Unsupported file type/);
+    fireEvent.click(screen.getByRole('button', { name: /Upload & Commit Hash/ }));
+    expect(mockUploadRecord).not.toHaveBeenCalled();
   });
 
   it('rejects a file over the size limit with a user-facing error', async () => {
-    mockListRecords.mockResolvedValue([]);
+    mockListRecords.mockResolvedValue(paged([]));
 
     renderPage();
     await screen.findByText('No records available yet.');
@@ -188,11 +206,12 @@ describe('RecordsPage', () => {
 
     expect(screen.getByText(/File is too large/)).toBeInTheDocument();
     expect(screen.queryByText('huge.pdf')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Upload & Commit Hash/ })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /Upload & Commit Hash/ }));
+    expect(mockUploadRecord).not.toHaveBeenCalled();
   });
 
   it('lets the user remove a selected attachment before submitting', async () => {
-    mockListRecords.mockResolvedValue([]);
+    mockListRecords.mockResolvedValue(paged([]));
 
     renderPage();
     await screen.findByText('No records available yet.');
@@ -209,6 +228,8 @@ describe('RecordsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove attachment' }));
 
     expect(screen.queryByText('report.pdf')).not.toBeInTheDocument();
-    expect(submitButton).toBeDisabled();
+    expect(screen.getByLabelText('Record document attachment')).toHaveAccessibleDescription('Attach a document');
+    fireEvent.click(submitButton);
+    expect(mockUploadRecord).not.toHaveBeenCalled();
   });
 });

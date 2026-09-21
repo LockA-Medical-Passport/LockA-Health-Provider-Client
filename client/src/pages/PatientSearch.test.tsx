@@ -76,7 +76,7 @@ async function runSearch(query: string) {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
 });
 
 describe('PatientSearch', () => {
@@ -133,7 +133,7 @@ describe('PatientSearch', () => {
     expect(screen.getByRole('button', { name: 'Request Access' })).toBeDisabled();
   });
 
-  it('keeps submit disabled until at least one category and a non-empty purpose are provided', async () => {
+  it('explains missing categories and purpose on submit and clears errors as they are corrected', async () => {
     mockSearchPatients.mockResolvedValue([activePatient]);
 
     renderPage();
@@ -142,23 +142,61 @@ describe('PatientSearch', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Request Access' }));
 
     const submitButton = screen.getByRole('button', { name: 'Send Access Request' });
-    expect(submitButton).toBeDisabled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.click(submitButton);
+    expect(screen.getByRole('group', { name: 'Record Categories' })).toHaveAccessibleDescription('Select at least one record category');
+    expect(screen.getByLabelText('Purpose Statement')).toHaveAccessibleDescription('Purpose statement is required');
+    expect(mockCreateAccessRequest).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Lab Result' }));
-    expect(submitButton).toBeDisabled();
+    expect(screen.queryByText('Select at least one record category')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText('Describe why access is needed…'), {
       target: { value: '   ' },
     });
-    expect(submitButton).toBeDisabled();
+    expect(screen.getByLabelText('Purpose Statement')).toHaveAccessibleDescription('Purpose statement is required');
 
     fireEvent.change(screen.getByPlaceholderText('Describe why access is needed…'), {
       target: { value: 'Follow-up consultation' },
     });
-    expect(submitButton).not.toBeDisabled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Lab Result' }));
-    expect(submitButton).toBeDisabled();
+    fireEvent.click(submitButton);
+    expect(screen.getByRole('group', { name: 'Record Categories' })).toHaveAccessibleDescription('Select at least one record category');
+    expect(mockCreateAccessRequest).not.toHaveBeenCalled();
+  });
+
+  it('retries a failed search with the original query without showing an empty-results state', async () => {
+    mockSearchPatients.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce([activePatient]);
+    renderPage();
+    await runSearch('test patient');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong');
+    expect(screen.queryByText(/No patients matched/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('Passport ID, name, or contact method…'), { target: { value: 'edited query' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('Test Patient')).toBeInTheDocument();
+    expect(mockSearchPatients).toHaveBeenLastCalledWith('test patient');
+  });
+
+  it('preserves the access request and shows an error toast when submission fails, then allows retry', async () => {
+    mockSearchPatients.mockResolvedValue([activePatient]);
+    mockCreateAccessRequest.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(fakeAccessRequest());
+    renderPage();
+    await runSearch('test patient');
+    await screen.findByText('Test Patient');
+    fireEvent.click(screen.getByRole('button', { name: 'Request Access' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lab Result' }));
+    fireEvent.change(screen.getByLabelText('Purpose Statement'), { target: { value: 'Follow-up' } });
+    const submit = screen.getByRole('button', { name: 'Send Access Request' });
+    fireEvent.click(submit);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Failed to send access request');
+    expect(screen.getByLabelText('Purpose Statement')).toHaveValue('Follow-up');
+    expect(screen.getByRole('button', { name: 'Lab Result' })).toHaveAttribute('aria-pressed', 'true');
+    expect(submit).toBeEnabled();
+    fireEvent.click(submit);
+    expect(await screen.findByText('Access request sent to Test Patient')).toBeInTheDocument();
+    expect(mockCreateAccessRequest).toHaveBeenCalledTimes(2);
   });
 
   describe('QR scanning', () => {
