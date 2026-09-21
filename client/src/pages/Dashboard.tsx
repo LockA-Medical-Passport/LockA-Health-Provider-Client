@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { StatCard } from '../components/StatCard';
@@ -11,44 +10,22 @@ import {
   RecordsIcon,
   SearchIcon,
 } from '../components/Icons';
-import { getAuditLog, getProvider, listAccessGrants, listAccessRequests, listRecords } from '../lib/api';
+import { getAuditLog, getDashboardStats, getProvider } from '../lib/api';
 import { formatDate } from '../lib/format';
-import type { AccessGrant, AccessRequest, AuditEvent, ProviderOrganization } from '../lib/types';
+import { ErrorState } from '../components/ErrorState';
+import { useAsyncResource } from '../hooks/useAsyncResource';
+
+async function loadDashboard() {
+  const [provider, stats, audit] = await Promise.all([
+    getProvider(), getDashboardStats(), getAuditLog({ page: 1, pageSize: 5 }),
+  ]);
+  return { provider, stats, recentActivity: audit.items };
+}
 
 export function Dashboard() {
-  const [loading, setLoading] = useState(true);
-  const [provider, setProvider] = useState<ProviderOrganization | null>(null);
-  const [pendingRequests, setPendingRequests] = useState<AccessRequest[]>([]);
-  const [grants, setGrants] = useState<AccessGrant[]>([]);
-  const [recordCount, setRecordCount] = useState(0);
-  const [recentActivity, setRecentActivity] = useState<AuditEvent[]>([]);
+  const { data, loading, error, reload } = useAsyncResource(loadDashboard);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      const [prov, requests, accessGrants, records, audit] = await Promise.all([
-        getProvider(),
-        listAccessRequests(),
-        listAccessGrants(),
-        listRecords(),
-        getAuditLog(),
-      ]);
-      if (cancelled) return;
-      setProvider(prov);
-      setPendingRequests(requests.filter((r) => r.status === 'pending'));
-      setGrants(accessGrants.filter((g) => g.status === 'active' || g.status === 'expiring_soon'));
-      setRecordCount(records.length);
-      setRecentActivity(audit.slice(0, 5));
-      setLoading(false);
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (loading || !provider) {
+  if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center">
         <Spinner size={32} borderWidth={3} />
@@ -56,6 +33,9 @@ export function Dashboard() {
       </div>
     );
   }
+
+  if (error || !data) return <div className="max-w-7xl mx-auto px-4 py-8"><ErrorState onRetry={reload} /></div>;
+  const { provider, stats, recentActivity } = data;
 
   const quickLinks = [
     { to: '/search', icon: SearchIcon, label: 'Patient Search', desc: 'Look up patients & request access', color: '#3b82f6' },
@@ -82,21 +62,21 @@ export function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           label="Active Access Grants"
-          value={String(grants.length)}
+          value={String(stats.activeGrants)}
           icon={<AccessIcon className="w-4 h-4" />}
           color="#10b981"
           sub="patients currently granting access"
         />
         <StatCard
           label="Pending Requests"
-          value={String(pendingRequests.length)}
+          value={String(stats.pendingRequests)}
           icon={<SearchIcon className="w-4 h-4" />}
           color="#f59e0b"
           sub="awaiting patient approval"
         />
         <StatCard
           label="Records on File"
-          value={String(recordCount)}
+          value={String(stats.recordCount)}
           icon={<RecordsIcon className="w-4 h-4" />}
           color="#06b6d4"
           sub="uploaded by this provider"

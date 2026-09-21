@@ -6,6 +6,7 @@ import type {
   PatientLookupResult,
   ProviderOrganization,
   StaffMember,
+  StaffRole,
 } from './types';
 
 export const mockProvider: ProviderOrganization = {
@@ -16,6 +17,12 @@ export const mockProvider: ProviderOrganization = {
   stellarAddress: 'GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37',
   registeredAt: '2025-11-03T09:12:00Z',
   staffCount: 4,
+};
+
+// Assign development wallet addresses here to exercise each staff role.
+// Unlisted wallets receive the least-privileged front_desk role.
+export const mockWalletRoles: Record<string, StaffRole> = {
+  [mockProvider.stellarAddress!]: 'admin',
 };
 
 export const mockStaff: StaffMember[] = [

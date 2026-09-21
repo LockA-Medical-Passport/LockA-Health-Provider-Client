@@ -111,3 +111,22 @@ export interface PatientLookupResult {
   displayName: string;
   passportStatus: 'active' | 'inactive';
 }
+
+export interface PageParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export interface DashboardStats {
+  activeGrants: number;
+  pendingRequests: number;
+  recordCount: number;
+}

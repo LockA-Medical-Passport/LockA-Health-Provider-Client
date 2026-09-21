@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import type { IDetectedBarcode, IScannerError } from '@yudiel/react-qr-scanner';
 import { GlassCard } from '../components/GlassCard';
@@ -10,6 +10,10 @@ import { createAccessRequest, searchPatients } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { RECORD_CATEGORY_LABELS } from '../lib/types';
 import type { PatientLookupResult, RecordCategory } from '../lib/types';
+import { FieldError } from '../components/FieldError';
+import { useFormValidation } from '../hooks/useFormValidation';
+import { requiredError } from '../lib/validation';
+import { ErrorState } from '../components/ErrorState';
 
 const ALL_CATEGORIES = Object.keys(RECORD_CATEGORY_LABELS) as RecordCategory[];
 
@@ -21,14 +25,25 @@ export function PatientSearch() {
   const [searched, setSearched] = useState(false);
   const [requestTarget, setRequestTarget] = useState<PatientLookupResult | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [searchError, setSearchError] = useState(false);
+  const [lastQuery, setLastQuery] = useState('');
+  const searchAttempt = useRef(0);
 
   async function runSearch(rawQuery: string) {
+    const attempt = ++searchAttempt.current;
     setQuery(rawQuery);
+    setLastQuery(rawQuery);
+    setSearchError(false);
     setSearching(true);
     setSearched(true);
-    const found = await searchPatients(rawQuery);
-    setResults(found);
-    setSearching(false);
+    try {
+      const found = await searchPatients(rawQuery);
+      if (attempt === searchAttempt.current) setResults(found);
+    } catch {
+      if (attempt === searchAttempt.current) setSearchError(true);
+    } finally {
+      if (attempt === searchAttempt.current) setSearching(false);
+    }
   }
 
   async function handleSearch(e: React.FormEvent) {
@@ -55,10 +70,11 @@ export function PatientSearch() {
           <input
             className="input-field"
             placeholder="Passport ID, name, or contact method…"
+            aria-label="Passport ID, name, or contact method"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <button type="submit" className="btn-primary rounded-lg px-5 py-2.5 flex items-center justify-center gap-2 whitespace-nowrap">
+          <button type="submit" disabled={searching} className="btn-primary rounded-lg px-5 py-2.5 flex items-center justify-center gap-2 whitespace-nowrap">
             {searching ? <Spinner size={14} /> : <SearchIcon className="w-4 h-4" />}
             Search
           </button>
@@ -79,13 +95,15 @@ export function PatientSearch() {
         </div>
       )}
 
-      {!searching && searched && results.length === 0 && (
+      {!searching && searchError && <ErrorState onRetry={() => runSearch(lastQuery)} />}
+
+      {!searching && !searchError && searched && results.length === 0 && (
         <GlassCard className="p-8 text-center">
-          <p className="text-slate-400 text-sm">No patients matched “{query}”.</p>
+          <p className="text-slate-400 text-sm">No patients matched “{lastQuery}”.</p>
         </GlassCard>
       )}
 
-      {!searching && results.length > 0 && (
+      {!searching && !searchError && results.length > 0 && (
         <div className="space-y-3">
           {results.map((patient) => (
             <GlassCard key={patient.passportId} className="p-4 flex items-center justify-between gap-4 flex-wrap">
@@ -198,10 +216,15 @@ function AccessRequestModal({
   onClose: () => void;
   onSubmitted: () => void;
 }) {
+  const { toast } = useToast();
   const [categories, setCategories] = useState<RecordCategory[]>([]);
   const [duration, setDuration] = useState(30);
   const [purpose, setPurpose] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const validation = useFormValidation({
+    categories: categories.length ? null : 'Select at least one record category',
+    purpose: requiredError(purpose, 'Purpose statement'),
+  });
 
   function toggleCategory(cat: RecordCategory) {
     setCategories((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]));
@@ -209,29 +232,37 @@ function AccessRequestModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (categories.length === 0 || !purpose.trim()) return;
+    if (!validation.validate() || submitting) return;
     setSubmitting(true);
-    await createAccessRequest({
-      patientPassportId: patient.passportId,
-      patientDisplayName: patient.displayName,
-      requestedCategories: categories,
-      durationDays: duration,
-      purpose: purpose.trim(),
-    });
-    setSubmitting(false);
-    onSubmitted();
+    try {
+      await createAccessRequest({
+        patientPassportId: patient.passportId,
+        patientDisplayName: patient.displayName,
+        requestedCategories: categories,
+        durationDays: duration,
+        purpose: purpose.trim(),
+      });
+      onSubmitted();
+    } catch {
+      toast('error', 'Failed to send access request. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <Modal title={`Request Access — ${patient.displayName}`} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="text-xs text-slate-400 mb-2 block">Record Categories</label>
+      <form noValidate onSubmit={handleSubmit} className="space-y-5">
+        <fieldset {...validation.fieldProps('categories')} onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) validation.touch('categories');
+        }}>
+          <legend className="text-xs text-slate-400 mb-2 block">Record Categories</legend>
           <div className="grid grid-cols-2 gap-2">
             {ALL_CATEGORIES.map((cat) => (
               <button
                 type="button"
                 key={cat}
+                aria-pressed={categories.includes(cat)}
                 onClick={() => toggleCategory(cat)}
                 className={`tab-btn text-left ${categories.includes(cat) ? 'active' : ''}`}
               >
@@ -239,11 +270,13 @@ function AccessRequestModal({
               </button>
             ))}
           </div>
-        </div>
+          <FieldError id={validation.errorId('categories')} error={validation.error('categories')} />
+        </fieldset>
 
         <div>
-          <label className="text-xs text-slate-400 mb-2 block">Access Duration</label>
+          <label htmlFor="access-duration" className="text-xs text-slate-400 mb-2 block">Access Duration</label>
           <select
+            id="access-duration"
             className="input-field"
             value={duration}
             onChange={(e) => setDuration(Number(e.target.value))}
@@ -256,19 +289,22 @@ function AccessRequestModal({
         </div>
 
         <div>
-          <label className="text-xs text-slate-400 mb-2 block">Purpose Statement</label>
+          <label htmlFor="access-purpose" className="text-xs text-slate-400 mb-2 block">Purpose Statement</label>
           <textarea
+            id="access-purpose"
+            {...validation.fieldProps('purpose')}
             className="input-field"
             rows={3}
             placeholder="Describe why access is needed…"
             value={purpose}
             onChange={(e) => setPurpose(e.target.value)}
           />
+          <FieldError id={validation.errorId('purpose')} error={validation.error('purpose')} />
         </div>
 
         <button
           type="submit"
-          disabled={submitting || categories.length === 0 || !purpose.trim()}
+          disabled={submitting}
           className="btn-primary w-full rounded-lg py-2.5 flex items-center justify-center gap-2"
         >
           {submitting && <Spinner size={14} />}

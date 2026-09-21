@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { GlassCard } from '../components/GlassCard';
 import { Spinner } from '../components/Spinner';
 import { Modal } from '../components/Modal';
@@ -8,6 +8,13 @@ import { useToast } from '../components/Toast';
 import { formatDate } from '../lib/format';
 import { RECORD_CATEGORY_LABELS } from '../lib/types';
 import type { MedicalRecord, RecordCategory } from '../lib/types';
+import { FieldError } from '../components/FieldError';
+import { useFormValidation } from '../hooks/useFormValidation';
+import { passportIdError, requiredError } from '../lib/validation';
+import { ErrorState } from '../components/ErrorState';
+import { Pagination } from '../components/Pagination';
+import { usePaginatedList } from '../hooks/usePaginatedList';
+import { canUploadRecords, useCurrentRole } from '../lib/roleContext';
 
 const ALL_CATEGORIES = Object.keys(RECORD_CATEGORY_LABELS) as RecordCategory[];
 
@@ -25,24 +32,20 @@ type Tab = 'all' | 'add';
 
 export function RecordsPage() {
   const { toast } = useToast();
+  const { role } = useCurrentRole();
+  const canUpload = canUploadRecords(role);
   const [tab, setTab] = useState<Tab>('all');
-  const [loading, setLoading] = useState(true);
-  const [records, setRecords] = useState<MedicalRecord[]>([]);
+  const records = usePaginatedList(listRecords);
   const [detail, setDetail] = useState<MedicalRecord | null>(null);
 
-  async function reload() {
-    setLoading(true);
-    setRecords(await listRecords());
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    reload();
-  }, []);
-
   async function openRecord(id: string) {
-    const record = await viewRecord(id);
-    if (record) setDetail(record);
+    try {
+      const record = await viewRecord(id);
+      if (!record) throw new Error('Record not found');
+      setDetail(record);
+    } catch {
+      toast('error', 'Failed to open record. Please try again.');
+    }
   }
 
   return (
@@ -56,24 +59,26 @@ export function RecordsPage() {
         <button className={`tab-btn ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
           All Records
         </button>
-        <button className={`tab-btn ${tab === 'add' ? 'active' : ''}`} onClick={() => setTab('add')}>
+        {canUpload && <button className={`tab-btn ${tab === 'add' ? 'active' : ''}`} onClick={() => setTab('add')}>
           Add Record
-        </button>
+        </button>}
       </div>
 
-      {tab === 'all' && (
+      {(tab === 'all' || !canUpload) && (
         <>
-          {loading ? (
+          {records.initialLoading ? (
             <div className="text-center py-10">
               <Spinner size={24} />
             </div>
-          ) : records.length === 0 ? (
+          ) : records.error && !records.data ? (
+            <ErrorState onRetry={records.reload} />
+          ) : records.items.length === 0 ? (
             <GlassCard className="p-8 text-center">
               <p className="text-slate-400 text-sm">No records available yet.</p>
             </GlassCard>
           ) : (
             <div className="space-y-3">
-              {records.map((record) => (
+              {records.items.map((record) => (
                 <GlassCard
                   key={record.id}
                   className="p-4 flex items-center justify-between gap-4 flex-wrap cursor-pointer hover:border-blue-500/40"
@@ -95,15 +100,16 @@ export function RecordsPage() {
               ))}
             </div>
           )}
+          {records.data && <Pagination {...records} />}
         </>
       )}
 
-      {tab === 'add' && (
+      {tab === 'add' && canUpload && (
         <AddRecordForm
           onUploaded={() => {
             toast('success', 'Record uploaded and hash committed on-chain');
             setTab('all');
-            reload();
+            records.refresh();
           }}
         />
       )}
@@ -114,6 +120,8 @@ export function RecordsPage() {
 }
 
 function AddRecordForm({ onUploaded }: { onUploaded: () => void }) {
+  const { toast } = useToast();
+  const { role } = useCurrentRole();
   const [patientPassportId, setPatientPassportId] = useState('');
   const [patientDisplayName, setPatientDisplayName] = useState('');
   const [category, setCategory] = useState<RecordCategory>('medical_summary');
@@ -122,11 +130,18 @@ function AddRecordForm({ onUploaded }: { onUploaded: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const validation = useFormValidation({
+    passport: passportIdError(patientPassportId),
+    title: requiredError(title, 'Title'),
+    file: fileError ?? (file ? null : 'Attach a document'),
+  });
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0] ?? null;
     e.target.value = '';
     if (!selected) return;
+    validation.touch('file');
+    setFile(null);
     if (!ACCEPTED_FILE_TYPES.includes(selected.type)) {
       setFileError(`Unsupported file type. Attach a ${ACCEPTED_FILE_TYPES_LABEL} file.`);
       return;
@@ -140,47 +155,58 @@ function AddRecordForm({ onUploaded }: { onUploaded: () => void }) {
   }
 
   function removeFile() {
+    validation.touch('file');
     setFile(null);
     setFileError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!patientPassportId.trim() || !title.trim() || !file) return;
+    if (!canUploadRecords(role) || !validation.validate() || !file || submitting) return;
     setSubmitting(true);
-    await uploadRecord({
-      patientPassportId: patientPassportId.trim(),
-      patientDisplayName: patientDisplayName.trim() || patientPassportId.trim(),
-      category,
-      title: title.trim(),
-      notes: notes.trim(),
-      file,
-    });
-    setSubmitting(false);
-    setPatientPassportId('');
-    setPatientDisplayName('');
-    setTitle('');
-    setNotes('');
-    setFile(null);
-    setFileError(null);
-    onUploaded();
+    try {
+      await uploadRecord({
+        patientPassportId: patientPassportId.trim(),
+        patientDisplayName: patientDisplayName.trim() || patientPassportId.trim(),
+        category,
+        title: title.trim(),
+        notes: notes.trim(),
+        file,
+      });
+      setPatientPassportId('');
+      setPatientDisplayName('');
+      setTitle('');
+      setNotes('');
+      setFile(null);
+      setFileError(null);
+      validation.reset();
+      onUploaded();
+    } catch {
+      toast('error', 'Failed to upload record. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <GlassCard className="p-5">
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
+      <form noValidate onSubmit={handleSubmit} className="space-y-4 max-w-lg">
         <div>
-          <label className="text-xs text-slate-400 mb-1.5 block">Patient Passport ID</label>
+          <label htmlFor="record-passport" className="text-xs text-slate-400 mb-1.5 block">Patient Passport ID</label>
           <input
+            id="record-passport"
+            {...validation.fieldProps('passport')}
             className="input-field"
             placeholder="pp_…"
             value={patientPassportId}
             onChange={(e) => setPatientPassportId(e.target.value)}
           />
+          <FieldError id={validation.errorId('passport')} error={validation.error('passport')} />
         </div>
         <div>
-          <label className="text-xs text-slate-400 mb-1.5 block">Patient Name</label>
+          <label htmlFor="record-patient-name" className="text-xs text-slate-400 mb-1.5 block">Patient Name</label>
           <input
+            id="record-patient-name"
             className="input-field"
             placeholder="Patient display name"
             value={patientDisplayName}
@@ -188,8 +214,8 @@ function AddRecordForm({ onUploaded }: { onUploaded: () => void }) {
           />
         </div>
         <div>
-          <label className="text-xs text-slate-400 mb-1.5 block">Record Category</label>
-          <select className="input-field" value={category} onChange={(e) => setCategory(e.target.value as RecordCategory)}>
+          <label htmlFor="record-category" className="text-xs text-slate-400 mb-1.5 block">Record Category</label>
+          <select id="record-category" className="input-field" value={category} onChange={(e) => setCategory(e.target.value as RecordCategory)}>
             {ALL_CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>
                 {RECORD_CATEGORY_LABELS[cat]}
@@ -198,8 +224,9 @@ function AddRecordForm({ onUploaded }: { onUploaded: () => void }) {
           </select>
         </div>
         <div>
-          <label className="text-xs text-slate-400 mb-1.5 block">Title</label>
-          <input className="input-field" placeholder="e.g. Complete Blood Count Panel" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <label htmlFor="record-title" className="text-xs text-slate-400 mb-1.5 block">Title</label>
+          <input id="record-title" {...validation.fieldProps('title')} className="input-field" placeholder="e.g. Complete Blood Count Panel" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <FieldError id={validation.errorId('title')} error={validation.error('title')} />
         </div>
         <div>
           <label className="text-xs text-slate-400 mb-1.5 block">Document ({ACCEPTED_FILE_TYPES_LABEL}, max {formatFileSize(MAX_FILE_SIZE_BYTES)})</label>
@@ -207,6 +234,7 @@ function AddRecordForm({ onUploaded }: { onUploaded: () => void }) {
             <UploadIcon className="w-4 h-4" />
             Choose File
             <input
+              {...validation.fieldProps('file')}
               type="file"
               accept={ACCEPTED_FILE_TYPES.join(',')}
               aria-label="Record document attachment"
@@ -225,15 +253,15 @@ function AddRecordForm({ onUploaded }: { onUploaded: () => void }) {
               </div>
             </div>
           )}
-          {fileError && <p className="text-xs text-red-400 mt-1.5">{fileError}</p>}
+          <FieldError id={validation.errorId('file')} error={validation.error('file')} />
         </div>
         <div>
-          <label className="text-xs text-slate-400 mb-1.5 block">Notes</label>
-          <textarea className="input-field" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <label htmlFor="record-notes" className="text-xs text-slate-400 mb-1.5 block">Notes</label>
+          <textarea id="record-notes" className="input-field" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
         <button
           type="submit"
-          disabled={submitting || !patientPassportId.trim() || !title.trim() || !file}
+          disabled={submitting}
           className="btn-success rounded-lg px-5 py-2.5 flex items-center gap-2"
         >
           {submitting ? <Spinner size={14} /> : <UploadIcon className="w-4 h-4" />}
