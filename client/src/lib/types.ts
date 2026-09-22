@@ -68,6 +68,12 @@ export interface AccessGrant {
   status: 'active' | 'expiring_soon' | 'revoked' | 'expired';
 }
 
+export interface RecordAttachment {
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+}
+
 export interface MedicalRecord {
   id: string;
   patientPassportId: string;
@@ -79,6 +85,7 @@ export interface MedicalRecord {
   createdAt: string;
   commitmentHash: string;
   notes: string;
+  attachment: RecordAttachment | null;
 }
 
 export type AuditEventType =
@@ -103,4 +110,23 @@ export interface PatientLookupResult {
   passportId: string;
   displayName: string;
   passportStatus: 'active' | 'inactive';
+}
+
+export interface PageParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export interface DashboardStats {
+  activeGrants: number;
+  pendingRequests: number;
+  recordCount: number;
 }

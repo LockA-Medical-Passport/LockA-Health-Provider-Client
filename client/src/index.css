@@ -173,6 +173,7 @@ body,
 
 .input-field {
   width: 100%;
+  min-width: 0;
   padding: 0.625rem 0.875rem;
   background: rgba(10, 15, 30, 0.8);
   border: 1px solid rgba(59, 130, 246, 0.2);
@@ -220,6 +221,8 @@ body,
 }
 
 .tab-btn {
+  min-height: 44px;
+  overflow-wrap: anywhere;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-size: 0.8125rem;

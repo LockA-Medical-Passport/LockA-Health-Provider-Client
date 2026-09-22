@@ -6,6 +6,7 @@ import type {
   PatientLookupResult,
   ProviderOrganization,
   StaffMember,
+  StaffRole,
 } from './types';
 
 export const mockProvider: ProviderOrganization = {
@@ -16,6 +17,12 @@ export const mockProvider: ProviderOrganization = {
   stellarAddress: 'GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37',
   registeredAt: '2025-11-03T09:12:00Z',
   staffCount: 4,
+};
+
+// Assign development wallet addresses here to exercise each staff role.
+// Unlisted wallets receive the least-privileged front_desk role.
+export const mockWalletRoles: Record<string, StaffRole> = {
+  [mockProvider.stellarAddress!]: 'admin',
 };
 
 export const mockStaff: StaffMember[] = [
@@ -113,6 +120,7 @@ export const mockRecords: MedicalRecord[] = [
     createdAt: '2026-07-22T11:00:00Z',
     commitmentHash: '0x7c4a8d09ca3762af61e59520943dc26494f8941',
     notes: 'All values within normal reference range. No follow-up indicated.',
+    attachment: { fileName: 'cbc-panel-report.pdf', fileType: 'application/pdf', fileSize: 184_320 },
   },
   {
     id: 'rec_3002',
@@ -125,6 +133,7 @@ export const mockRecords: MedicalRecord[] = [
     createdAt: '2026-06-16T09:30:00Z',
     commitmentHash: '0x2fd4e1c0b8a3f5d6e7c8b9a0f1e2d3c4b5a69788',
     notes: 'Prescribed for bacterial sinusitis. Take with food, twice daily.',
+    attachment: null,
   },
   {
     id: 'rec_3003',
@@ -137,6 +146,7 @@ export const mockRecords: MedicalRecord[] = [
     createdAt: '2025-03-11T10:00:00Z',
     commitmentHash: '0x9a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3',
     notes: 'Single dose, lifetime validity per WHO guidance.',
+    attachment: null,
   },
 ];
 

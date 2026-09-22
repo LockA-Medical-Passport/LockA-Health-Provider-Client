@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useWallet } from './useWallet';
+import { deferred } from '../test/fixtures';
 
 vi.mock('@stellar/freighter-api', () => ({
   default: {
@@ -21,10 +22,45 @@ const freighterApi = (await import('@stellar/freighter-api')).default as unknown
 };
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
 });
 
 describe('useWallet', () => {
+  it('stays in checking through all session checks and never falls back to idle for an approved wallet', async () => {
+    const installed = deferred<{ isConnected: boolean }>();
+    const allowed = deferred<{ isAllowed: boolean }>();
+    const account = deferred<{ address: string }>();
+    freighterApi.isConnected.mockReturnValue(installed.promise);
+    freighterApi.isAllowed.mockReturnValue(allowed.promise);
+    freighterApi.getAddress.mockReturnValue(account.promise);
+    freighterApi.getNetwork.mockResolvedValue({ network: 'TESTNET' });
+    const statuses: string[] = [];
+    const { result } = renderHook(() => { const wallet = useWallet(); statuses.push(wallet.status); return wallet; });
+    await act(async () => { installed.resolve({ isConnected: true }); });
+    expect(result.current.status).toBe('checking');
+    await act(async () => { allowed.resolve({ isAllowed: true }); });
+    expect(result.current.status).toBe('checking');
+    await act(async () => { account.resolve({ address: 'GRESTORED' }); });
+    expect(result.current.status).toBe('connected');
+    expect(statuses).not.toContain('idle');
+    expect(freighterApi.requestAccess).not.toHaveBeenCalled();
+  });
+
+  it('settles restoration errors and ignores late responses after disconnect', async () => {
+    freighterApi.isConnected.mockRejectedValueOnce(new Error('Extension unavailable'));
+    const { result } = renderHook(() => useWallet());
+    await waitFor(() => expect(result.current.error).toBe('Extension unavailable'));
+    expect(result.current.status).toBe('idle');
+    const pending = deferred<{ address: string }>();
+    freighterApi.requestAccess.mockReturnValue(pending.promise);
+    let connecting!: Promise<void>;
+    act(() => { connecting = result.current.connect(); });
+    act(() => { result.current.disconnect(); });
+    await act(async () => { pending.resolve({ address: 'GLATE' }); await connecting; });
+    expect(result.current.status).toBe('idle');
+    expect(result.current.address).toBeNull();
+  });
+
   it('starts in checking status', () => {
     freighterApi.isConnected.mockReturnValue(new Promise(() => {}));
 
@@ -144,5 +180,32 @@ describe('useWallet', () => {
     expect(result.current.status).toBe('idle');
     expect(result.current.address).toBeNull();
     expect(result.current.network).toBeNull();
+  });
+
+  it('detects a mismatch and rechecks the network without requesting wallet access again', async () => {
+    freighterApi.isConnected.mockResolvedValue({ isConnected: true });
+    freighterApi.isAllowed.mockResolvedValue({ isAllowed: true });
+    freighterApi.getAddress.mockResolvedValue({ address: 'GADDRESS123' });
+    freighterApi.getNetwork.mockResolvedValue({ network: 'PUBLIC' });
+    const { result } = renderHook(() => useWallet());
+    await waitFor(() => expect(result.current.networkMismatch).toBe(true));
+    freighterApi.getNetwork.mockResolvedValue({ network: 'TESTNET' });
+    await act(async () => { await result.current.refreshNetwork(); });
+    expect(result.current.networkMismatch).toBe(false);
+    expect(result.current.network).toBe('TESTNET');
+    expect(freighterApi.requestAccess).not.toHaveBeenCalled();
+  });
+
+  it('recovers a failed network lookup when the window regains focus', async () => {
+    freighterApi.isConnected.mockResolvedValue({ isConnected: true });
+    freighterApi.isAllowed.mockResolvedValue({ isAllowed: true });
+    freighterApi.getAddress.mockResolvedValue({ address: 'GADDRESS123' });
+    freighterApi.getNetwork.mockRejectedValueOnce(new Error('Wallet unavailable'));
+    const { result } = renderHook(() => useWallet());
+    await waitFor(() => expect(result.current.networkError).toBe('Wallet unavailable'));
+    freighterApi.getNetwork.mockResolvedValue({ network: 'TESTNET' });
+    act(() => { window.dispatchEvent(new Event('focus')); });
+    await waitFor(() => expect(result.current.network).toBe('TESTNET'));
+    expect(result.current.networkError).toBeNull();
   });
 });

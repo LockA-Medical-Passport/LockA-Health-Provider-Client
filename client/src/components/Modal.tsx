@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import type { ReactNode } from 'react';
 import { CloseIcon } from './Icons';
 
@@ -11,6 +11,7 @@ export function Modal({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const titleId = useId();
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -25,16 +26,19 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className="glass-bright rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto animate-slide-up"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="glass-bright rounded-2xl w-full min-w-0 max-w-lg max-h-[calc(100dvh-2rem)] sm:max-h-[85dvh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-blue-900/30 sticky top-0 glass-bright">
-          <h3 className="text-base font-semibold text-white">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 border-b border-blue-900/30 sticky top-0 z-10 glass-bright">
+          <h3 id={titleId} className="min-w-0 break-words text-base font-semibold text-white">{title}</h3>
+          <button aria-label="Close dialog" onClick={onClose} className="text-slate-400 hover:text-white min-w-11 min-h-11 shrink-0 flex items-center justify-center">
             <CloseIcon className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-4 sm:p-6">{children}</div>
       </div>
     </div>
   );

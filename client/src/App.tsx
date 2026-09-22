@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import { useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { GlassCard } from './components/GlassCard';
 import { ProviderIcon } from './components/Icons';
@@ -9,22 +10,43 @@ import { RecordsPage } from './pages/RecordsPage';
 import { AccessManagement } from './pages/AccessManagement';
 import { AuditLog } from './pages/AuditLog';
 import { ProviderProfile } from './pages/ProviderProfile';
+import { RoleProvider } from './lib/roleContext';
+import { getCurrentRole } from './lib/api';
+import { useAsyncResource } from './hooks/useAsyncResource';
+import { ErrorState } from './components/ErrorState';
+import { Spinner } from './components/Spinner';
 
 function App() {
-  const { status, address, network, error, connect, disconnect } = useWallet();
+  const wallet = useWallet();
+  // Remount role and page state whenever the connected identity changes.
+  return <WalletSession key={wallet.status === 'connected' ? wallet.address : 'disconnected'} wallet={wallet} />;
+}
+
+function WalletSession({ wallet }: { wallet: ReturnType<typeof useWallet> }) {
+  const { status, address, network, error, connect, disconnect } = wallet;
   const connected = status === 'connected' && !!address;
+  const loadRole = useCallback(() => connected ? getCurrentRole(address) : Promise.resolve(null), [connected, address]);
+  const currentRole = useAsyncResource(loadRole);
 
   return (
-    <>
+    <RoleProvider role={currentRole.error || currentRole.loading ? null : currentRole.data}>
       <Navbar
         walletStatus={status}
         address={address}
         network={network}
         onConnect={connect}
         onDisconnect={disconnect}
+        onCheckNetwork={wallet.refreshNetwork}
+        networkChecking={wallet.networkChecking}
+        networkError={wallet.networkError}
       />
       <main className="pb-16">
-        {!connected ? (
+        {status === 'checking' ? (
+          <div role="status" className="max-w-2xl mx-auto px-4 py-16 text-center text-slate-300">
+            <Spinner size={28} />
+            <p className="mt-4">Restoring wallet session…</p>
+          </div>
+        ) : !connected ? (
           <div className="max-w-2xl mx-auto px-4 py-16">
             <GlassCard className="p-12 text-center glow-blue">
               <div
@@ -65,6 +87,13 @@ function App() {
               {error && <p className="text-xs text-red-400 mt-4">{error}</p>}
             </GlassCard>
           </div>
+        ) : currentRole.loading ? (
+          <div role="status" className="px-4 py-16 text-center text-slate-400">
+            <Spinner size={24} />
+            <p className="mt-4">Loading staff permissions…</p>
+          </div>
+        ) : currentRole.error || !currentRole.data ? (
+          <div className="max-w-4xl mx-auto px-4 py-8"><ErrorState onRetry={currentRole.reload} /></div>
         ) : (
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -76,7 +105,7 @@ function App() {
           </Routes>
         )}
       </main>
-    </>
+    </RoleProvider>
   );
 }
 

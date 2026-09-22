@@ -1,3 +1,5 @@
+import { paged } from '../test/fixtures';
+import { RoleProvider } from '../lib/roleContext';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { AccessManagement } from './AccessManagement';
@@ -71,7 +73,7 @@ const sampleRequest: AccessRequest = {
 function renderPage() {
   return render(
     <ToastProvider>
-      <AccessManagement />
+      <RoleProvider role="admin"><AccessManagement /></RoleProvider>
     </ToastProvider>,
   );
 }
@@ -81,7 +83,7 @@ function getCard(name: string) {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
 });
 
 describe('AccessManagement', () => {
@@ -93,10 +95,10 @@ describe('AccessManagement', () => {
           resolveRevoke = () => resolve(undefined);
         }),
     );
-    mockListAccessGrants.mockResolvedValueOnce([activeGrant]).mockResolvedValueOnce([
+    mockListAccessGrants.mockResolvedValueOnce(paged([activeGrant])).mockResolvedValueOnce(paged([
       { ...activeGrant, status: 'revoked' },
-    ]);
-    mockListAccessRequests.mockResolvedValue([]);
+    ]));
+    mockListAccessRequests.mockResolvedValue(paged([]));
 
     renderPage();
     await screen.findByText('Active Patient');
@@ -118,8 +120,8 @@ describe('AccessManagement', () => {
   });
 
   it('switches between the Active Grants and My Access Requests tabs', async () => {
-    mockListAccessGrants.mockResolvedValue([activeGrant]);
-    mockListAccessRequests.mockResolvedValue([sampleRequest]);
+    mockListAccessGrants.mockResolvedValue(paged([activeGrant]));
+    mockListAccessRequests.mockResolvedValue(paged([sampleRequest]));
 
     renderPage();
     await screen.findByText('Active Patient');
@@ -142,8 +144,8 @@ describe('AccessManagement', () => {
   });
 
   it('only shows the Revoke button for active/expiring_soon grants, never for expired or revoked ones', async () => {
-    mockListAccessGrants.mockResolvedValue([activeGrant, expiringGrant, expiredGrant, revokedGrant]);
-    mockListAccessRequests.mockResolvedValue([]);
+    mockListAccessGrants.mockResolvedValue(paged([activeGrant, expiringGrant, expiredGrant, revokedGrant]));
+    mockListAccessRequests.mockResolvedValue(paged([]));
 
     renderPage();
     await screen.findByText('Active Patient');

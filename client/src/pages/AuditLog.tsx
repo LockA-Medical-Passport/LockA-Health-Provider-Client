@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
 import { GlassCard } from '../components/GlassCard';
 import { Spinner } from '../components/Spinner';
 import { Badge, type BadgeTone } from '../components/Badge';
 import { getAuditLog } from '../lib/api';
 import { formatDate } from '../lib/format';
-import type { AuditEvent, AuditEventType } from '../lib/types';
+import type { AuditEventType } from '../lib/types';
+import { ErrorState } from '../components/ErrorState';
+import { Pagination } from '../components/Pagination';
+import { usePaginatedList } from '../hooks/usePaginatedList';
 
 const EVENT_TONE: Record<AuditEventType, BadgeTone> = {
   access_requested: 'cyan',
@@ -25,15 +27,7 @@ const EVENT_LABEL: Record<AuditEventType, string> = {
 };
 
 export function AuditLog() {
-  const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<AuditEvent[]>([]);
-
-  useEffect(() => {
-    getAuditLog().then((data) => {
-      setEvents(data);
-      setLoading(false);
-    });
-  }, []);
+  const events = usePaginatedList(getAuditLog);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 animate-fade-in">
@@ -42,18 +36,20 @@ export function AuditLog() {
         <p className="text-slate-400 text-sm">Timestamped history of access requests, approvals, revocations, and record views.</p>
       </div>
 
-      {loading ? (
+      {events.initialLoading ? (
         <div className="text-center py-10">
           <Spinner size={24} />
         </div>
+      ) : events.error && !events.data ? (
+        <ErrorState onRetry={events.reload} />
       ) : (
         <GlassCard className="p-5">
           <div className="space-y-4">
-            {events.map((event) => (
-              <div key={event.id} className="flex items-start justify-between gap-4 border-b border-blue-900/20 pb-4 last:border-0 last:pb-0">
-                <div className="flex items-start gap-3">
+            {events.items.map((event) => (
+              <div key={event.id} className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4 border-b border-blue-900/20 pb-4 last:border-0 last:pb-0">
+                <div className="flex min-w-0 flex-wrap sm:flex-nowrap items-start gap-3">
                   <Badge tone={EVENT_TONE[event.type]}>{EVENT_LABEL[event.type]}</Badge>
-                  <div>
+                  <div className="min-w-0 break-words">
                     <div className="text-sm text-white">{event.patientDisplayName}</div>
                     <div className="text-xs text-slate-400">{event.detail}</div>
                     <div className="text-xs text-slate-500 mt-0.5">by {event.actor}</div>
@@ -62,10 +58,11 @@ export function AuditLog() {
                 <span className="text-xs text-slate-500 whitespace-nowrap">{formatDate(event.timestamp)}</span>
               </div>
             ))}
-            {events.length === 0 && <p className="text-sm text-slate-500">No audit events recorded yet.</p>}
+            {events.items.length === 0 && <p className="text-sm text-slate-500">No audit events recorded yet.</p>}
           </div>
         </GlassCard>
       )}
+      {events.data && <Pagination {...events} />}
     </div>
   );
 }
