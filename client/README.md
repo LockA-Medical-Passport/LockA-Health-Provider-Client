@@ -18,6 +18,14 @@ npm run dev
 
 Requires the [Freighter](https://www.freighter.app/) browser extension to connect a Stellar wallet.
 
+### Expected wallet network
+
+Set `VITE_STELLAR_NETWORK` in `.env.local` to Freighter's network name (`TESTNET` by default, or `PUBLIC`, `FUTURENET`, or a custom name). `src/lib/network.ts` is the single source for network comparison and display labels. Restart Vite after configuration changes.
+
+The navbar warns when the connected wallet is on another network. **Switch to Testnet** (or the configured network) explains how to select it in Freighter; **Check network** refreshes the connection's network without requesting access again. Returning focus to the app also rechecks it. The installed Freighter API v6 exposes network reads but no network-switch method, so this flow uses Freighter's own network selector. Network lookup failures show a retry action.
+
+On reload, the app displays **Restoring wallet session…** while Freighter checks installation, existing approval, the account, and its network. An already-approved wallet goes directly to the portal without a disconnected-screen flash or another access prompt. Rejected checks settle into a recoverable state; disconnecting invalidates any pending restoration or network responses. This relies on Freighter's existing approval rather than persisting wallet credentials in browser storage.
+
 ## Testing
 
 Tests run on [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/react), with `jsdom` as the DOM environment.
@@ -30,7 +38,45 @@ npm run test:coverage  # run with a v8 coverage report (text + html + lcov)
 
 Test files live next to the code they cover (`*.test.ts` / `*.test.tsx`). Shared setup (currently just `@testing-library/jest-dom` matchers) lives in `src/test/setup.ts` and is wired in via `vite.config.ts`'s `test.setupFiles`.
 
+### Responsive browser checks
+
+```bash
+npx playwright install chromium
+npm run test:responsive
+```
+
+Playwright starts the Vite server and verifies all six pages, upload and detail views, access-request modal layout, and menu navigation at 375, 768, and 1024 pixels. The 375px project emulates a touch-capable mobile browser; menu interactions use taps. Freighter is replaced only through browser request routing in `e2e/wallet.ts`, so no extension or production test bypass is required.
+
+Use `QA_CAPTURE_PHASE=after npm run test:responsive` to update screenshots and layout measurements under `docs/qa/screenshots/after/`. Set `RESPONSIVE_BASE_URL` to test an already-running server, or `PLAYWRIGHT_EXECUTABLE_PATH` to use an installed Chromium-compatible browser. See the [PR description and before/after evidence](docs/qa/PR-description.md).
+
+## Component workshop
+
+```bash
+npm run storybook        # http://localhost:6006
+npm run build-storybook  # static output in storybook-static/
+npm run test:storybook   # browser smoke checks and component interactions
+```
+
+Stories live alongside shared components in `src/components/*.stories.tsx`, using the app's Tailwind theme. All shared components are covered, including all badge tones, count/status cards, spinner/logo sizes, the icon gallery, validation and fetch errors, and pagination states. Navbar stories cover every wallet status, all staff roles, network warnings and retry instructions, and the expanded mobile menu. Modal stories can be opened and dismissed; toast stories demonstrate success/error/info messages, queueing, dismissal, and normal expiry. Use the viewport toolbar for 375px, 768px, and 1024px previews.
+
+The workshop supplies router, role, and toast providers where needed. It does not require Freighter or a backend. Browser checks start their own server on port 6006; set `STORYBOOK_BASE_URL` to test an already-running workshop on another port. `PLAYWRIGHT_EXECUTABLE_PATH` is supported here too.
+
 ## Data layer
+
+### Backend configuration
+
+Copy `.env.example` to `.env.local` and set `VITE_API_BASE_URL` to the backend origin and API prefix, for example `http://localhost:3000/api`. Restart Vite after changing environment settings; production values are embedded at build time. `VITE_*` variables are public client configuration and must not contain secrets.
+
+`src/lib/http.ts` exports `http<T>(path, options)` for JSON requests. It keeps the configured prefix when joining paths, serializes `body`, accepts standard fetch options (including headers, credentials, and abort signals), and returns parsed JSON. Use `http<void>` for endpoints with empty responses. Failures become `HttpError` with a user-facing message, HTTP `status` (or `null` for transport failures), and optional parsed `details`.
+
+```ts
+import { http } from './http';
+import type { MedicalRecord, PagedResult } from './types';
+
+const records = await http<PagedResult<MedicalRecord>>('/records?page=1&pageSize=10');
+```
+
+The default prefix is `/api` on the current origin. A separately hosted backend must allow the frontend origin through CORS. Setting the URL does **not** switch the application out of mock mode: migrate each function in `api.ts` to `http` when the real backend is ready, preserving its return shape. No real backend requests are made by the existing mock layer.
 
 `src/lib/api.ts` implements the provider API surface using in-memory fixtures in `src/lib/mockData.ts`. Backend integration should preserve these client contracts, including pagination, aggregate statistics, and the current staff role lookup.
 

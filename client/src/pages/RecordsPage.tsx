@@ -55,7 +55,7 @@ export function RecordsPage() {
         <p className="text-slate-400 text-sm">View approved records and upload treatment notes, prescriptions, and lab results.</p>
       </div>
 
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div className="flex gap-2 mb-6 flex-wrap" aria-label="Record views">
         <button className={`tab-btn ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
           All Records
         </button>
@@ -84,11 +84,11 @@ export function RecordsPage() {
                   className="p-4 flex items-center justify-between gap-4 flex-wrap cursor-pointer hover:border-blue-500/40"
                   onClick={() => openRecord(record.id)}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
                       <RecordsIcon className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0 break-words">
                       <div className="text-white font-medium">{record.title}</div>
                       <div className="text-xs text-slate-500">
                         {record.patientDisplayName} · {RECORD_CATEGORY_LABELS[record.category]}
@@ -296,9 +296,9 @@ function RecordDetailModal({ record, onClose }: { record: MedicalRecord; onClose
 
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="text-xs text-slate-500">{label}</span>
-      <span className={`text-right text-slate-200 ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>
+    <div className="flex flex-col sm:flex-row items-start justify-between gap-1 sm:gap-4 min-w-0">
+      <span className="text-xs text-slate-500 shrink-0">{label}</span>
+      <span className={`min-w-0 max-w-full break-words sm:text-right text-slate-200 ${mono ? 'font-mono text-xs break-all' : ''}`}>{value}</span>
     </div>
   );
 }

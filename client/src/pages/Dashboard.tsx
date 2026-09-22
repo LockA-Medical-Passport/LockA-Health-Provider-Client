@@ -111,8 +111,8 @@ export function Dashboard() {
         <div className="section-header">Recent Activity</div>
         <div className="space-y-3">
           {recentActivity.map((event) => (
-            <div key={event.id} className="flex items-start justify-between gap-3 text-sm">
-              <div>
+            <div key={event.id} className="flex flex-col sm:flex-row items-start justify-between gap-1 sm:gap-3 text-sm">
+              <div className="min-w-0 break-words">
                 <span className="text-white font-medium">{event.patientDisplayName}</span>
                 <span className="text-slate-400"> — {event.detail}</span>
               </div>

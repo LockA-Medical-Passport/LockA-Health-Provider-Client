@@ -36,9 +36,17 @@ function WalletSession({ wallet }: { wallet: ReturnType<typeof useWallet> }) {
         network={network}
         onConnect={connect}
         onDisconnect={disconnect}
+        onCheckNetwork={wallet.refreshNetwork}
+        networkChecking={wallet.networkChecking}
+        networkError={wallet.networkError}
       />
       <main className="pb-16">
-        {!connected ? (
+        {status === 'checking' ? (
+          <div role="status" className="max-w-2xl mx-auto px-4 py-16 text-center text-slate-300">
+            <Spinner size={28} />
+            <p className="mt-4">Restoring wallet session…</p>
+          </div>
+        ) : !connected ? (
           <div className="max-w-2xl mx-auto px-4 py-16">
             <GlassCard className="p-12 text-center glow-blue">
               <div

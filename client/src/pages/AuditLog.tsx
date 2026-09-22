@@ -46,10 +46,10 @@ export function AuditLog() {
         <GlassCard className="p-5">
           <div className="space-y-4">
             {events.items.map((event) => (
-              <div key={event.id} className="flex items-start justify-between gap-4 border-b border-blue-900/20 pb-4 last:border-0 last:pb-0">
-                <div className="flex items-start gap-3">
+              <div key={event.id} className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4 border-b border-blue-900/20 pb-4 last:border-0 last:pb-0">
+                <div className="flex min-w-0 flex-wrap sm:flex-nowrap items-start gap-3">
                   <Badge tone={EVENT_TONE[event.type]}>{EVENT_LABEL[event.type]}</Badge>
-                  <div>
+                  <div className="min-w-0 break-words">
                     <div className="text-sm text-white">{event.patientDisplayName}</div>
                     <div className="text-xs text-slate-400">{event.detail}</div>
                     <div className="text-xs text-slate-500 mt-0.5">by {event.actor}</div>

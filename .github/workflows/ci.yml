@@ -35,3 +35,34 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Build Storybook
+        run: npm run build-storybook
+
+  browser-qa:
+    name: Responsive and component browser checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Check responsive layouts
+        run: npm run test:responsive
+        env:
+          QA_CAPTURE_PHASE: after
+      - name: Check Storybook interactions
+        run: npm run test:storybook
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-qa
+          path: |
+            client/playwright-report/
+            client/test-results/
+            client/docs/qa/screenshots/after/
