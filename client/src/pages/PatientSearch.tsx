@@ -257,7 +257,7 @@ function AccessRequestModal({
           if (!event.currentTarget.contains(event.relatedTarget)) validation.touch('categories');
         }}>
           <legend className="text-xs text-slate-400 mb-2 block">Record Categories</legend>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ALL_CATEGORIES.map((cat) => (
               <button
                 type="button"

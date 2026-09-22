@@ -11,7 +11,13 @@ node_modules
 dist
 dist-ssr
 coverage
+playwright-report
+test-results
+storybook-static
 *.local
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

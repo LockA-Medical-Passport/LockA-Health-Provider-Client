@@ -41,7 +41,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+      <div className="fixed bottom-4 right-4 left-4 sm:left-auto z-50 flex flex-col gap-2 sm:max-w-sm">
         {toasts.map((t) => {
           const style = KIND_STYLES[t.kind];
           return (
@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <span className="font-bold" style={{ color: style.color }}>
                 {style.icon}
               </span>
-              <span className="text-sm text-slate-200 flex-1">{t.message}</span>
+              <span className="text-sm text-slate-200 flex-1 min-w-0 break-words">{t.message}</span>
               <button aria-label="Dismiss notification" onClick={() => removeToast(t.id)} className="text-slate-500 hover:text-slate-300">
                 <CloseIcon className="w-4 h-4" />
               </button>

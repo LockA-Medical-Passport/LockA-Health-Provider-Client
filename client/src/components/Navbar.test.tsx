@@ -5,6 +5,7 @@ import { Navbar } from './Navbar';
 import { truncateAddress } from '../lib/format';
 import type { WalletStatus } from '../hooks/useWallet';
 import { RoleProvider } from '../lib/roleContext';
+import { EXPECTED_NETWORK, EXPECTED_NETWORK_LABEL } from '../lib/network';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard' },
@@ -40,6 +41,26 @@ function renderNavbar(
 }
 
 describe('Navbar', () => {
+  it('warns about a mismatched network, explains switching, and rechecks without disconnecting', () => {
+    const onCheckNetwork = vi.fn();
+    const props = { walletStatus: 'connected' as const, address: 'GTEST', network: 'OTHER_NETWORK', onConnect: vi.fn(), onDisconnect: vi.fn(), onCheckNetwork };
+    const view = render(<MemoryRouter><Navbar {...props} /></MemoryRouter>);
+    expect(screen.getByRole('alert')).toHaveTextContent(`This app uses ${EXPECTED_NETWORK_LABEL}`);
+    fireEvent.click(screen.getByRole('button', { name: `Switch to ${EXPECTED_NETWORK_LABEL}` }));
+    expect(screen.getByText(/Open Freighter, use its network selector/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Check network' }));
+    expect(onCheckNetwork).toHaveBeenCalledOnce();
+    view.rerender(<MemoryRouter><Navbar {...props} network={EXPECTED_NETWORK} /></MemoryRouter>);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(props.onDisconnect).not.toHaveBeenCalled();
+  }, 15000);
+
+  it('shows network verification failures with a retry action', () => {
+    render(<MemoryRouter><Navbar walletStatus="connected" address="GTEST" network={null} networkError="Unable to verify the wallet network." onCheckNetwork={vi.fn()} onConnect={vi.fn()} onDisconnect={vi.fn()} /></MemoryRouter>);
+    expect(screen.getByRole('alert')).toHaveTextContent('Unable to verify');
+    expect(screen.getByRole('button', { name: 'Check network' })).toBeEnabled();
+  });
+
   it.each(['admin', 'clinician', 'front_desk'] as const)('displays the effective %s role', (role) => {
     const labels = { admin: 'Admin', clinician: 'Clinician', front_desk: 'Front Desk' };
     render(<MemoryRouter><RoleProvider role={role}><Navbar walletStatus="connected" address="GTEST" network="TESTNET" onConnect={vi.fn()} onDisconnect={vi.fn()} /></RoleProvider></MemoryRouter>);

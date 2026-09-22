@@ -154,12 +154,12 @@ function AddStaffForm({ onAdded }: { onAdded: () => void }) {
 
   return (
     <form noValidate onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-start gap-2 border-t border-blue-900/20 pt-4">
-      <div className="w-full">
+      <div className="w-full min-w-0">
         <label htmlFor="staff-name" className="sr-only">Full name</label>
         <input id="staff-name" {...validation.fieldProps('name')} className="input-field" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} />
         <FieldError id={validation.errorId('name')} error={validation.error('name')} />
       </div>
-      <div className="w-full">
+      <div className="w-full min-w-0">
         <label htmlFor="staff-email" className="sr-only">Email</label>
         <input id="staff-email" {...validation.fieldProps('email')} className="input-field" placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <FieldError id={validation.errorId('email')} error={validation.error('email')} />

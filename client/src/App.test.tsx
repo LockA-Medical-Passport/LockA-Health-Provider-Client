@@ -15,6 +15,7 @@ const wallet = {
   status: 'connected' as const,
   address: 'GADMIN', network: 'TESTNET', error: null,
   connect: vi.fn(), disconnect: vi.fn(), refresh: vi.fn(),
+  refreshNetwork: vi.fn(), networkChecking: false, networkMismatch: false, networkError: null,
 };
 
 function app() {
@@ -26,6 +27,19 @@ beforeEach(() => {
   vi.mocked(useWallet).mockReturnValue(wallet);
   vi.mocked(listRecords).mockResolvedValue(paged([]));
 });
+
+it('shows restoration rather than the disconnected gate during the initial wallet check', async () => {
+  vi.mocked(useWallet).mockReturnValue({ ...wallet, status: 'checking', address: null });
+  const view = render(app());
+  expect(screen.getByText('Restoring wallet session…')).toBeInTheDocument();
+  expect(screen.queryByText('Connect Wallet to Access Provider Portal')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Restoring…' })).toBeDisabled();
+  vi.mocked(getCurrentRole).mockResolvedValue('admin');
+  vi.mocked(useWallet).mockReturnValue(wallet);
+  view.rerender(app());
+  await screen.findByRole('button', { name: 'Add Record' });
+  expect(screen.queryByText('Connect Wallet to Access Provider Portal')).not.toBeInTheDocument();
+}, 15000);
 
 it('holds privileged pages while role resolution is pending or failed, then supports retry', async () => {
   const pending = deferred<StaffRole>();
