@@ -117,4 +117,5 @@ src/
   lib/          types, mock API client, mock data, formatting helpers
   pages/        Dashboard, PatientSearch, RecordsPage, AccessManagement, AuditLog, ProviderProfile
   test/         shared test setup (jest-dom matchers)
+e2e/            Playwright end-to-end specs + fixtures (Freighter mock)
 ```
