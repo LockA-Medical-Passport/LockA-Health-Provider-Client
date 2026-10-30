@@ -54,7 +54,7 @@ export function Dashboard() {
           <p className="text-slate-400 text-sm">{provider.name} — patient-consented record access</p>
         </div>
         <GlassCard className="px-4 py-3 text-right">
-          <div className="text-xs text-slate-500 mb-1">Verification Status</div>
+          <div className="text-xs text-slate-400 mb-1">Verification Status</div>
           <Badge tone={statusToBadgeTone(provider.verificationStatus)}>{provider.verificationStatus}</Badge>
         </GlassCard>
       </div>
@@ -116,10 +116,10 @@ export function Dashboard() {
                 <span className="text-white font-medium">{event.patientDisplayName}</span>
                 <span className="text-slate-400"> — {event.detail}</span>
               </div>
-              <span className="text-xs text-slate-500 whitespace-nowrap">{formatDate(event.timestamp)}</span>
+              <span className="text-xs text-slate-400 whitespace-nowrap">{formatDate(event.timestamp)}</span>
             </div>
           ))}
-          {recentActivity.length === 0 && <p className="text-sm text-slate-500">No recent activity yet.</p>}
+          {recentActivity.length === 0 && <p className="text-sm text-slate-400">No recent activity yet.</p>}
         </div>
       </GlassCard>
     </div>

@@ -25,6 +25,11 @@
   box-sizing: border-box;
 }
 
+:focus-visible {
+  outline: 2px solid #00d4ff;
+  outline-offset: 2px;
+}
+
 html,
 body,
 #root {
@@ -81,7 +86,7 @@ body,
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
   color: white;
   border: none;
   cursor: pointer;
@@ -90,7 +95,7 @@ body,
   font-size: 0.875rem;
 }
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
   transform: translateY(-1px);
 }
@@ -138,7 +143,7 @@ body,
 
 .btn-danger {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: #f87171;
   border: 1px solid rgba(239, 68, 68, 0.3);
   cursor: pointer;
   transition: all 0.2s;
@@ -190,7 +195,7 @@ body,
   box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
 }
 .input-field::placeholder {
-  color: #475569;
+  color: #94a3b8;
 }
 .input-field option {
   background: #0d1530;
@@ -227,14 +232,14 @@ body,
   border-radius: 0.5rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #64748b;
+  color: #94a3b8;
   background: rgba(13, 21, 48, 0.5);
   border: 1px solid rgba(59, 130, 246, 0.1);
   cursor: pointer;
   transition: all 0.15s;
 }
 .tab-btn:hover {
-  color: #94a3b8;
+  color: #cbd5e1;
   border-color: rgba(59, 130, 246, 0.25);
 }
 .tab-btn.active {
@@ -248,7 +253,7 @@ body,
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #475569;
+  color: #94a3b8;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid rgba(59, 130, 246, 0.1);
@@ -275,7 +280,7 @@ body,
 }
 .badge-red {
   background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
+  color: #f87171;
   border: 1px solid rgba(239, 68, 68, 0.25);
 }
 .badge-cyan {
@@ -284,9 +289,9 @@ body,
   border: 1px solid rgba(0, 212, 255, 0.25);
 }
 .badge-gray {
-  background: rgba(100, 116, 139, 0.12);
-  color: #64748b;
-  border: 1px solid rgba(100, 116, 139, 0.25);
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 .spinner {

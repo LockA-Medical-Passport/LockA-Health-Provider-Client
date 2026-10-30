@@ -44,11 +44,11 @@ export function AccessManagement() {
         <p className="text-slate-400 text-sm">Track active access grants and monitor your pending or resolved requests.</p>
       </div>
 
-      <div className="flex gap-2 mb-6 flex-wrap">
-        <button className={`tab-btn ${tab === 'grants' ? 'active' : ''}`} onClick={() => setTab('grants')}>
+      <div className="flex gap-2 mb-6 flex-wrap" role="group" aria-label="Access views">
+        <button type="button" aria-pressed={tab === 'grants'} className={`tab-btn ${tab === 'grants' ? 'active' : ''}`} onClick={() => setTab('grants')}>
           Active Grants
         </button>
-        <button className={`tab-btn ${tab === 'requests' ? 'active' : ''}`} onClick={() => setTab('requests')}>
+        <button type="button" aria-pressed={tab === 'requests'} className={`tab-btn ${tab === 'requests' ? 'active' : ''}`} onClick={() => setTab('requests')}>
           My Access Requests
         </button>
       </div>
@@ -70,10 +70,10 @@ export function AccessManagement() {
             <GlassCard key={grant.id} className="p-4 flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <div className="text-white font-medium">{grant.patientDisplayName}</div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-slate-400">
                   {grant.categories.map((c) => RECORD_CATEGORY_LABELS[c]).join(', ')}
                 </div>
-                <div className="text-xs text-slate-500 mt-0.5">
+                <div className="text-xs text-slate-400 mt-0.5">
                   Expires {formatDateOnly(grant.expiresAt)}
                   {grant.status === 'active' || grant.status === 'expiring_soon'
                     ? ` (${Math.max(daysUntil(grant.expiresAt), 0)} days left)`
@@ -107,10 +107,10 @@ export function AccessManagement() {
             <GlassCard key={request.id} className="p-4 flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <div className="text-white font-medium">{request.patientDisplayName}</div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-slate-400">
                   {request.requestedCategories.map((c) => RECORD_CATEGORY_LABELS[c]).join(', ')} · {request.durationDays} days
                 </div>
-                <div className="text-xs text-slate-500 mt-0.5">{request.purpose}</div>
+                <div className="text-xs text-slate-400 mt-0.5">{request.purpose}</div>
               </div>
               <Badge tone={statusToBadgeTone(request.status)}>{request.status}</Badge>
             </GlassCard>

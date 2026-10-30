@@ -52,13 +52,13 @@ export function AuditLog() {
                   <div className="min-w-0 break-words">
                     <div className="text-sm text-white">{event.patientDisplayName}</div>
                     <div className="text-xs text-slate-400">{event.detail}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">by {event.actor}</div>
+                    <div className="text-xs text-slate-400 mt-0.5">by {event.actor}</div>
                   </div>
                 </div>
-                <span className="text-xs text-slate-500 whitespace-nowrap">{formatDate(event.timestamp)}</span>
+                <span className="text-xs text-slate-400 whitespace-nowrap">{formatDate(event.timestamp)}</span>
               </div>
             ))}
-            {events.items.length === 0 && <p className="text-sm text-slate-500">No audit events recorded yet.</p>}
+            {events.items.length === 0 && <p className="text-sm text-slate-400">No audit events recorded yet.</p>}
           </div>
         </GlassCard>
       )}

@@ -116,6 +116,23 @@ describe('RecordsPage', () => {
     expect(screen.getByText('report.pdf · 1.0 KB')).toBeInTheDocument();
   });
 
+  it('opens a record from the keyboard and exposes an accessible name for the record card', async () => {
+    mockListRecords.mockResolvedValue(paged([existingRecord]));
+    mockViewRecord.mockResolvedValue(existingRecord);
+
+    renderPage();
+    const card = await screen.findByRole('button', { name: 'View record: Existing Blood Panel' });
+
+    expect(card).toHaveAttribute('tabindex', '0');
+    card.focus();
+    expect(card).toHaveFocus();
+
+    fireEvent.keyDown(card, { key: 'Enter' });
+
+    await waitFor(() => expect(mockViewRecord).toHaveBeenCalledWith('rec_existing'));
+    expect(await screen.findByText('Commitment Hash')).toBeInTheDocument();
+  });
+
   it('opens the detail modal for an existing record, triggers a record_viewed lookup, and closes on Escape', async () => {
     mockListRecords.mockResolvedValue(paged([existingRecord]));
     mockViewRecord.mockResolvedValue(existingRecord);

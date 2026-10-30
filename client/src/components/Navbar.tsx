@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LockaLogo } from './LockaLogo';
 import { Spinner } from './Spinner';
@@ -42,9 +42,23 @@ export function Navbar({ walletStatus, address, network, onConnect, onDisconnect
   const [mobileOpen, setMobileOpen] = useState(false);
   const [networkHelpOpen, setNetworkHelpOpen] = useState(false);
   const mobileMenuId = useId();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   const { role } = useCurrentRole();
   const networkMismatch = walletStatus === 'connected' && network !== null && !isExpectedNetwork(network);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMobileOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen]);
 
   return (
     <nav className="glass-bright sticky top-0 z-40 border-b border-blue-900/30">
@@ -68,9 +82,10 @@ export function Navbar({ walletStatus, address, network, onConnect, onDisconnect
               <Link
                 key={item.to}
                 to={item.to}
+                aria-current={location.pathname === item.to ? 'page' : undefined}
                 className={`nav-link ${location.pathname === item.to ? 'active' : ''}`}
               >
-                <item.icon className="w-3.5 h-3.5 mr-1.5 opacity-70" />
+                <item.icon aria-hidden="true" className="w-3.5 h-3.5 mr-1.5 opacity-70" />
                 {item.label}
               </Link>
             ))}
@@ -86,7 +101,7 @@ export function Navbar({ walletStatus, address, network, onConnect, onDisconnect
                     style={{ background: '#10b981', animation: 'pulse 2s ease-in-out infinite' }}
                   />
                   <span className="text-xs font-mono text-slate-300">{truncateAddress(address, 6)}</span>
-                  {network && <span className="text-xs text-slate-500">{network}</span>}
+                  {network && <span className="text-xs text-slate-400">{network}</span>}
                 </div>
                 <button onClick={onDisconnect} className="btn-secondary min-h-11 text-xs px-3 py-1.5 rounded-lg">
                   Disconnect
@@ -97,7 +112,7 @@ export function Navbar({ walletStatus, address, network, onConnect, onDisconnect
                 onClick={onConnect}
                 disabled={walletStatus === 'checking' || walletStatus === 'connecting' || walletStatus === 'unavailable'}
                 className="btn-primary min-h-11 text-sm px-4 py-2 rounded-lg flex items-center gap-2"
-                style={{ background: 'linear-gradient(135deg, #0066ff, #00d4ff)' }}
+                style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
                 title={walletStatus === 'unavailable' ? 'Freighter wallet extension not detected' : undefined}
               >
                 {walletStatus === 'checking' || walletStatus === 'connecting' ? (
@@ -113,13 +128,15 @@ export function Navbar({ walletStatus, address, network, onConnect, onDisconnect
               </button>
             )}
             <button
+              ref={menuButtonRef}
+              type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
               className="2xl:hidden btn-secondary p-2 min-w-11 min-h-11 rounded-lg flex items-center justify-center"
               aria-label="Toggle menu"
               aria-expanded={mobileOpen}
               aria-controls={mobileMenuId}
             >
-              {mobileOpen ? <CloseIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+              {mobileOpen ? <CloseIcon aria-hidden="true" className="w-5 h-5" /> : <MenuIcon aria-hidden="true" className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -154,9 +171,10 @@ export function Navbar({ walletStatus, address, network, onConnect, onDisconnect
                 key={item.to}
                 to={item.to}
                 onClick={() => setMobileOpen(false)}
+                aria-current={location.pathname === item.to ? 'page' : undefined}
                 className={`nav-link min-h-11 w-full text-left mb-1 ${location.pathname === item.to ? 'active' : ''}`}
               >
-                <item.icon className="w-4 h-4 mr-2" />
+                <item.icon aria-hidden="true" className="w-4 h-4 mr-2" />
                 {item.label}
               </Link>
             ))}

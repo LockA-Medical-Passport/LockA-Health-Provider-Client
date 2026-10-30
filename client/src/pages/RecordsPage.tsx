@@ -55,11 +55,11 @@ export function RecordsPage() {
         <p className="text-slate-400 text-sm">View approved records and upload treatment notes, prescriptions, and lab results.</p>
       </div>
 
-      <div className="flex gap-2 mb-6 flex-wrap" aria-label="Record views">
-        <button className={`tab-btn ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
+      <div className="flex gap-2 mb-6 flex-wrap" role="group" aria-label="Record views">
+        <button type="button" aria-pressed={tab === 'all'} className={`tab-btn ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
           All Records
         </button>
-        {canUpload && <button className={`tab-btn ${tab === 'add' ? 'active' : ''}`} onClick={() => setTab('add')}>
+        {canUpload && <button type="button" aria-pressed={tab === 'add'} className={`tab-btn ${tab === 'add' ? 'active' : ''}`} onClick={() => setTab('add')}>
           Add Record
         </button>}
       </div>
@@ -81,21 +81,30 @@ export function RecordsPage() {
               {records.items.map((record) => (
                 <GlassCard
                   key={record.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View record: ${record.title}`}
                   className="p-4 flex items-center justify-between gap-4 flex-wrap cursor-pointer hover:border-blue-500/40"
                   onClick={() => openRecord(record.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      openRecord(record.id);
+                    }
+                  }}
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-                      <RecordsIcon className="w-4 h-4" />
+                      <RecordsIcon aria-hidden="true" className="w-4 h-4" />
                     </div>
                     <div className="min-w-0 break-words">
                       <div className="text-white font-medium">{record.title}</div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-slate-400">
                         {record.patientDisplayName} · {RECORD_CATEGORY_LABELS[record.category]}
                       </div>
                     </div>
                   </div>
-                  <div className="text-xs text-slate-500 whitespace-nowrap">{formatDate(record.createdAt)}</div>
+                  <div className="text-xs text-slate-400 whitespace-nowrap">{formatDate(record.createdAt)}</div>
                 </GlassCard>
               ))}
             </div>
@@ -230,8 +239,8 @@ function AddRecordForm({ onUploaded }: { onUploaded: () => void }) {
         </div>
         <div>
           <label className="text-xs text-slate-400 mb-1.5 block">Document ({ACCEPTED_FILE_TYPES_LABEL}, max {formatFileSize(MAX_FILE_SIZE_BYTES)})</label>
-          <label className="btn-secondary rounded-lg px-4 py-2 text-sm inline-flex items-center gap-2 cursor-pointer w-fit">
-            <UploadIcon className="w-4 h-4" />
+          <label className="btn-secondary rounded-lg px-4 py-2 text-sm inline-flex items-center gap-2 cursor-pointer w-fit focus-within:ring-2 focus-within:ring-cyan-400 focus-within:ring-offset-2 focus-within:ring-offset-[#0a1628]">
+            <UploadIcon aria-hidden="true" className="w-4 h-4" />
             Choose File
             <input
               {...validation.fieldProps('file')}
@@ -246,9 +255,9 @@ function AddRecordForm({ onUploaded }: { onUploaded: () => void }) {
             <div className="mt-2 flex items-center justify-between gap-2 text-sm bg-slate-900/40 border border-blue-900/30 rounded-lg px-3 py-2">
               <span className="truncate text-slate-200">{file.name}</span>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-slate-500">{formatFileSize(file.size)}</span>
-                <button type="button" onClick={removeFile} className="text-slate-400 hover:text-white" aria-label="Remove attachment">
-                  <CloseIcon className="w-4 h-4" />
+                <span className="text-xs text-slate-400">{formatFileSize(file.size)}</span>
+                <button type="button" onClick={removeFile} className="text-slate-400 hover:text-white min-w-11 min-h-11 flex items-center justify-center" aria-label="Remove attachment">
+                  <CloseIcon aria-hidden="true" className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -286,7 +295,7 @@ function RecordDetailModal({ record, onClose }: { record: MedicalRecord; onClose
           <Row label="Attachment" value={`${record.attachment.fileName} · ${formatFileSize(record.attachment.fileSize)}`} />
         )}
         <div>
-          <div className="text-xs text-slate-500 mb-1">Notes</div>
+          <div className="text-xs text-slate-400 mb-1">Notes</div>
           <p className="text-slate-300">{record.notes}</p>
         </div>
       </div>
@@ -297,7 +306,7 @@ function RecordDetailModal({ record, onClose }: { record: MedicalRecord; onClose
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex flex-col sm:flex-row items-start justify-between gap-1 sm:gap-4 min-w-0">
-      <span className="text-xs text-slate-500 shrink-0">{label}</span>
+      <span className="text-xs text-slate-400 shrink-0">{label}</span>
       <span className={`min-w-0 max-w-full break-words sm:text-right text-slate-200 ${mono ? 'font-mono text-xs break-all' : ''}`}>{value}</span>
     </div>
   );

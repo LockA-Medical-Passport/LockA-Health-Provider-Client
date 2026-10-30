@@ -37,13 +37,13 @@ describe('StatCard', () => {
     );
 
     expect(screen.getByText('vs. last week')).toBeInTheDocument();
-    expect(container.getElementsByClassName('text-slate-500 mt-0.5')).toHaveLength(1);
+    expect(container.getElementsByClassName('text-slate-400 mt-0.5')).toHaveLength(1);
   });
 
   it('omits the sub label when not provided', () => {
     const { container } = render(<StatCard label="Total Patients" value="128" icon={<span />} color="#22d3ee" />);
 
-    expect(container.getElementsByClassName('text-slate-500 mt-0.5')).toHaveLength(0);
+    expect(container.getElementsByClassName('text-slate-400 mt-0.5')).toHaveLength(0);
   });
 
   it('applies the color prop to the icon container', () => {

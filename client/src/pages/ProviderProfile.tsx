@@ -73,7 +73,7 @@ export function ProviderProfile() {
           <Info label="Stellar Address" value={provider.stellarAddress ?? '—'} mono />
           <Info label="Registered" value={formatDateOnly(provider.registeredAt)} />
           <div>
-            <div className="text-xs text-slate-500 mb-1">Verification Status</div>
+            <div className="text-xs text-slate-400 mb-1">Verification Status</div>
             <Badge tone={statusToBadgeTone(provider.verificationStatus)}>{provider.verificationStatus}</Badge>
           </div>
         </div>
@@ -82,7 +82,7 @@ export function ProviderProfile() {
       <GlassCard className="p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="section-header !mb-0 !border-0 !pb-0">Staff Accounts</div>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-400">
             {provider.staffCount} member{provider.staffCount === 1 ? '' : 's'}
           </span>
         </div>
@@ -91,7 +91,7 @@ export function ProviderProfile() {
             <div key={member.id} className="flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <div className="text-sm text-white font-medium">{member.name}</div>
-                <div className="text-xs text-slate-500">{member.email}</div>
+                <div className="text-xs text-slate-400">{member.email}</div>
               </div>
               <div className="flex items-center gap-3">
                 <Badge tone="cyan">{ROLE_LABELS[member.role]}</Badge>
@@ -119,7 +119,7 @@ export function ProviderProfile() {
 function Info({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <div className="text-xs text-slate-500 mb-1">{label}</div>
+      <div className="text-xs text-slate-400 mb-1">{label}</div>
       <div className={`text-slate-200 ${mono ? 'font-mono text-xs break-all' : ''}`}>{value}</div>
     </div>
   );

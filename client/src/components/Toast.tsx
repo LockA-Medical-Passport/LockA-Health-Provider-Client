@@ -55,7 +55,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 {style.icon}
               </span>
               <span className="text-sm text-slate-200 flex-1 min-w-0 break-words">{t.message}</span>
-              <button aria-label="Dismiss notification" onClick={() => removeToast(t.id)} className="text-slate-500 hover:text-slate-300">
+              <button aria-label="Dismiss notification" onClick={() => removeToast(t.id)} className="text-slate-400 hover:text-slate-300">
                 <CloseIcon className="w-4 h-4" />
               </button>
             </div>

@@ -25,7 +25,7 @@ export function StatCard({ label, value, icon, color, sub, badgeTone }: StatCard
       </div>
       <div className="text-xs text-slate-400 mb-1">{label}</div>
       {!badgeTone && <div className="text-lg font-bold text-white">{value}</div>}
-      {sub && <div className="text-xs text-slate-500 mt-0.5">{sub}</div>}
+      {sub && <div className="text-xs text-slate-400 mt-0.5">{sub}</div>}
     </GlassCard>
   );
 }

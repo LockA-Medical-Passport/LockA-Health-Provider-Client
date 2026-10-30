@@ -146,5 +146,29 @@ describe('Navbar', () => {
 
       expect(screen.getAllByRole('link', { name: 'Patient Search' })).toHaveLength(1);
     });
+
+    it('exposes its expanded state and closes on Escape, returning focus to the toggle', () => {
+      renderNavbar();
+
+      const toggle = screen.getByRole('button', { name: 'Toggle menu' });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.click(toggle);
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getAllByRole('link', { name: 'Dashboard' })).toHaveLength(2);
+
+      fireEvent.keyDown(window, { key: 'Escape' });
+
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getAllByRole('link', { name: 'Dashboard' })).toHaveLength(1);
+      expect(toggle).toHaveFocus();
+    });
+
+    it('marks the current page link for assistive technologies', () => {
+      renderNavbar({}, '/records');
+
+      expect(screen.getAllByRole('link', { name: 'Medical Records' })[0]).toHaveAttribute('aria-current', 'page');
+      expect(screen.getAllByRole('link', { name: 'Dashboard' })[0]).not.toHaveAttribute('aria-current');
+    });
   });
 });

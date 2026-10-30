@@ -81,9 +81,10 @@ export function PatientSearch() {
           <button
             type="button"
             onClick={() => setScannerOpen(true)}
+            aria-label="Scan QR"
             className="btn-secondary rounded-lg px-5 py-2.5 flex items-center justify-center gap-2 whitespace-nowrap"
           >
-            <QrIcon className="w-4 h-4" />
+            <QrIcon aria-hidden="true" className="w-4 h-4" />
             Scan QR
           </button>
         </form>
@@ -109,7 +110,7 @@ export function PatientSearch() {
             <GlassCard key={patient.passportId} className="p-4 flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <div className="text-white font-medium">{patient.displayName}</div>
-                <div className="text-xs text-slate-500 font-mono">{patient.passportId}</div>
+                <div className="text-xs text-slate-400 font-mono">{patient.passportId}</div>
               </div>
               <div className="flex items-center gap-3">
                 <Badge tone={statusToBadgeTone(patient.passportStatus)}>{patient.passportStatus}</Badge>
@@ -161,7 +162,7 @@ function QrScanModal({ onClose, onScanned }: { onClose: () => void; onScanned: (
         <div className="text-center py-6">
           <AlertIcon className="w-8 h-8 text-amber-400 mx-auto mb-3" />
           <p className="text-sm text-slate-300 mb-1">{error}</p>
-          <p className="text-xs text-slate-500 mb-5">You can still search using the passport ID field above.</p>
+          <p className="text-xs text-slate-400 mb-5">You can still search using the passport ID field above.</p>
           <button type="button" onClick={onClose} className="btn-secondary rounded-lg px-4 py-2 text-sm">
             Close
           </button>

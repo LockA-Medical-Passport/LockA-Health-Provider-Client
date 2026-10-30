@@ -67,12 +67,12 @@ function WalletSession({ wallet }: { wallet: ReturnType<typeof useWallet> }) {
                 onClick={connect}
                 disabled={status === 'connecting' || status === 'unavailable'}
                 className="btn-primary rounded-lg px-6 py-2.5"
-                style={{ background: 'linear-gradient(135deg, #0066ff, #00d4ff)' }}
+                style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
               >
                 {status === 'unavailable' ? 'Install Freighter Wallet' : 'Connect Wallet'}
               </button>
               {status === 'unavailable' && (
-                <p className="text-xs text-slate-500 mt-4">
+                <p className="text-xs text-slate-400 mt-4">
                   No Stellar wallet extension detected.{' '}
                   <a
                     href="https://www.freighter.app/"
